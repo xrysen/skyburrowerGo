@@ -64,6 +64,9 @@ func main() {
 	ebiten.SetWindowTitle("Skyburrower")
 
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
+
+	ebiten.SetCursorMode(ebiten.CursorModeHidden)
+
 	if err := ebiten.RunGame(game); err != nil {
 		log.Fatal(err)
 	}

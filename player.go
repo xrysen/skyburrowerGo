@@ -12,6 +12,7 @@ type Player struct {
 	frameWidth   int
 	frameHeight  int
 	frameCounter int
+	speedLevel   int
 }
 
 func NewPlayer(img *ebiten.Image) *Player {
@@ -22,21 +23,43 @@ func NewPlayer(img *ebiten.Image) *Player {
 		frameWidth:   80,
 		frameHeight:  80,
 		frameCounter: 0,
+		speedLevel:   1,
 	}
 }
 
+func (p *Player) getMovementSpeed() float64 {
+	const slow = 0.03
+	const fast = 1.0
+
+	return slow + (fast-slow)*(float64(p.speedLevel-1)/6.0)
+}
+
 func (p *Player) Update() {
-	if ebiten.IsKeyPressed(ebiten.KeyArrowRight) {
-		p.x += 3
+	mx, my := ebiten.CursorPosition()
+
+	targetX := float64(mx) - (float64(p.frameWidth) / 2)
+	targetY := float64(my) - (float64(p.frameHeight) / 2)
+
+	lerpFactor := p.getMovementSpeed()
+	if lerpFactor > 1 {
+		lerpFactor = 1
 	}
-	if ebiten.IsKeyPressed(ebiten.KeyArrowLeft) {
-		p.x -= 3
+
+	p.x += (targetX - p.x) * lerpFactor
+	p.y += (targetY - p.y) * lerpFactor
+
+	const screenW = 640
+	const screenH = 360
+	if p.x < 0 {
+		p.x = 0
+	} else if p.x > screenW-float64(p.frameWidth) {
+		p.x = screenW - float64(p.frameWidth)
 	}
-	if ebiten.IsKeyPressed(ebiten.KeyArrowUp) {
-		p.y -= 3
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyArrowDown) {
-		p.y += 3
+
+	if p.y < 0 {
+		p.y = 0
+	} else if p.y > screenH-float64(p.frameHeight) {
+		p.y = screenH - float64(p.frameHeight)
 	}
 
 	p.frameCounter++
