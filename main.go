@@ -11,17 +11,34 @@ import (
 type Game struct {
 	player     *Player
 	background *Background
+	bullets    []*Bullet
+	bulletImg  *ebiten.Image
 }
 
 func (g *Game) Update() error {
 	g.background.Update()
-	g.player.Update()
+	g.player.Update(g)
+
+	var activeBullets []*Bullet
+	for _, b := range g.bullets {
+		b.Update()
+
+		if b.x < 640 {
+			activeBullets = append(activeBullets, b)
+		}
+	}
+	g.bullets = activeBullets
+
 	return nil
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
 	for i := 0; i < 3; i++ {
 		g.background.Draw(screen, i)
+	}
+
+	for _, b := range g.bullets {
+		b.Draw(screen)
 	}
 
 	g.player.Draw(screen)
@@ -47,6 +64,7 @@ func main() {
 	bg1 := loadImage("Levels/Level1/lvl1-2.png")
 	bg2 := loadImage("Levels/Level1/lvl1-3.png")
 	bg3 := loadImage("Levels/Level1/lvl1-4.png")
+	bImg := loadImage("Assets/Bullets/seedShot.png")
 
 	game := &Game{
 		player: NewPlayer(pImg),
@@ -58,6 +76,7 @@ func main() {
 				{img: bg3, speed: 4.0},
 			},
 		},
+		bulletImg: bImg,
 	}
 
 	ebiten.SetWindowSize(640, 360)

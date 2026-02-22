@@ -13,6 +13,8 @@ type Player struct {
 	frameHeight  int
 	frameCounter int
 	speedLevel   int
+	fireCounter  int
+	fireInterval int
 }
 
 func NewPlayer(img *ebiten.Image) *Player {
@@ -24,6 +26,7 @@ func NewPlayer(img *ebiten.Image) *Player {
 		frameHeight:  80,
 		frameCounter: 0,
 		speedLevel:   1,
+		fireInterval: 30,
 	}
 }
 
@@ -34,7 +37,7 @@ func (p *Player) getMovementSpeed() float64 {
 	return slow + (fast-slow)*(float64(p.speedLevel-1)/6.0)
 }
 
-func (p *Player) Update() {
+func (p *Player) Update(g *Game) {
 	mx, my := ebiten.CursorPosition()
 
 	targetX := float64(mx) - (float64(p.frameWidth) / 2)
@@ -62,6 +65,18 @@ func (p *Player) Update() {
 		p.y = screenH - float64(p.frameHeight)
 	}
 
+	p.fireCounter++
+
+	if p.fireCounter >= p.fireInterval {
+		p.fireCounter = 0
+
+		bx := p.x + float64(p.frameWidth)/2
+		by := p.y + float64(p.frameHeight)/2 - 4
+
+		newBullet := NewBullet(bx, by, g.bulletImg)
+		g.bullets = append(g.bullets, newBullet)
+
+	}
 	p.frameCounter++
 }
 
