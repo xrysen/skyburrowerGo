@@ -53,7 +53,7 @@ func (g *Game) Update() error {
 	for _, e := range g.enemies {
 		e.Update(g.player.x, g.player.y, g)
 		ex, _ := e.GetPosition()
-		if ex > -100 {
+		if ex > -100 && !e.IsDead() {
 			activeEnemies = append(activeEnemies, e)
 		}
 	}
@@ -70,7 +70,6 @@ func (g *Game) Update() error {
 				b.y = 1000
 				if e.IsDead() {
 					e.OnDeath(g)
-					fmt.Println("KABOOM")
 				}
 			}
 		}
