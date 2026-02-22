@@ -3,16 +3,21 @@ package main
 import (
 	"fmt"
 	"log"
+	"math/rand/v2"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
 type Game struct {
-	player     *Player
-	background *Background
-	bullets    []*Bullet
-	bulletImg  *ebiten.Image
+	player       *Player
+	background   *Background
+	bullets      []*Bullet
+	bulletImg    *ebiten.Image
+	enemies      []Enemy
+	enemyImage   map[EnemyType]*ebiten.Image
+	spawnTimers  map[EnemyType]int
+	currentLevel *LevelConfig
 }
 
 func (g *Game) Update() error {
@@ -29,6 +34,48 @@ func (g *Game) Update() error {
 	}
 	g.bullets = activeBullets
 
+	for _, spawnConfig := range g.currentLevel.SpawnConfigs {
+		g.spawnTimers[spawnConfig.EnemyType]++
+		if g.spawnTimers[spawnConfig.EnemyType] >= spawnConfig.SpawnRate {
+			g.spawnTimers[spawnConfig.EnemyType] = 0
+
+			y := rand.Float64() * 360
+			if !spawnConfig.RandomY {
+				y = 100
+			}
+
+			enemy := CreateEnemy(spawnConfig.EnemyType, 650, y, g.enemyImage)
+			g.enemies = append(g.enemies, enemy)
+		}
+	}
+
+	var activeEnemies []Enemy
+	for _, e := range g.enemies {
+		e.Update(g.player.x, g.player.y, g)
+		ex, _ := e.GetPosition()
+		if ex > -100 {
+			activeEnemies = append(activeEnemies, e)
+		}
+	}
+
+	g.enemies = activeEnemies
+
+	for _, b := range g.bullets {
+		for _, e := range g.enemies {
+			ex, ey := e.GetPosition()
+			ew, eh := e.GetBounds()
+			if checkCollision(b.x, b.y, 8, 8, ex, ey, ew, eh) {
+				e.TakeDamage(1)
+				b.x = 1000
+				b.y = 1000
+				if e.IsDead() {
+					e.OnDeath(g)
+					fmt.Println("KABOOM")
+				}
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -39,6 +86,10 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	for _, b := range g.bullets {
 		b.Draw(screen)
+	}
+
+	for _, e := range g.enemies {
+		e.Draw(screen)
 	}
 
 	g.player.Draw(screen)
@@ -59,12 +110,18 @@ func loadImage(path string) *ebiten.Image {
 }
 
 func main() {
+	level := GetLevel1()
+
 	pImg := loadImage("Assets/Player/MeadowSprite-sheet.png")
-	bg0 := loadImage("Levels/Level1/lvl1-1.png")
-	bg1 := loadImage("Levels/Level1/lvl1-2.png")
-	bg2 := loadImage("Levels/Level1/lvl1-3.png")
-	bg3 := loadImage("Levels/Level1/lvl1-4.png")
+	bg0 := loadImage(level.BackgroundPaths[0])
+	bg1 := loadImage(level.BackgroundPaths[1])
+	bg2 := loadImage(level.BackgroundPaths[2])
+	bg3 := loadImage(level.BackgroundPaths[3])
 	bImg := loadImage("Assets/Bullets/seedShot.png")
+
+	enemyImages := map[EnemyType]*ebiten.Image{
+		FlutternatType: loadImage("Assets/Enemies/Flutternat/flutterNat.png"),
+	}
 
 	game := &Game{
 		player: NewPlayer(pImg),
@@ -76,7 +133,10 @@ func main() {
 				{img: bg3, speed: 4.0},
 			},
 		},
-		bulletImg: bImg,
+		bulletImg:    bImg,
+		enemyImage:   enemyImages,
+		spawnTimers:  make(map[EnemyType]int),
+		currentLevel: level,
 	}
 
 	ebiten.SetWindowSize(640, 360)
