@@ -86,5 +86,5 @@ func (f *Flutternat) IsDead() bool {
 }
 
 func (f *Flutternat) OnDeath(game *Game) {
-
+	// TODO: if boss, set bossKilled to true
 }

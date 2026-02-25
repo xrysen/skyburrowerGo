@@ -9,6 +9,14 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
+type GameState int
+
+const (
+	StateLevel GameState = iota
+	StateLevelComplete
+	StateGameOver
+)
+
 type Game struct {
 	player       *Player
 	background   *Background
@@ -17,10 +25,15 @@ type Game struct {
 	enemies      []Enemy
 	enemyImage   map[EnemyType]*ebiten.Image
 	spawnTimers  map[EnemyType]int
+	spawnCounts  map[EnemyType]int
 	currentLevel *LevelConfig
+	levelTimer   int
+	state        GameState
+	bossKilled   bool
 }
 
 func (g *Game) Update() error {
+	g.levelTimer++
 	g.background.Update()
 	g.player.Update(g)
 
@@ -34,18 +47,36 @@ func (g *Game) Update() error {
 	}
 	g.bullets = activeBullets
 
-	for _, spawnConfig := range g.currentLevel.SpawnConfigs {
-		g.spawnTimers[spawnConfig.EnemyType]++
-		if g.spawnTimers[spawnConfig.EnemyType] >= spawnConfig.SpawnRate {
-			g.spawnTimers[spawnConfig.EnemyType] = 0
+	switch g.currentLevel.EndCondition {
+	case EndOnTimer:
+		if g.levelTimer >= g.currentLevel.Duration {
+			g.completeLevel()
+		}
+	case EndOnBossDeath:
+		if g.bossKilled {
+			g.completeLevel()
+		}
+	}
 
-			y := rand.Float64() * 360
-			if !spawnConfig.RandomY {
-				y = 100
+	for _, spawnCfg := range g.currentLevel.SpawnConfigs {
+		if g.levelTimer < spawnCfg.StartFrame {
+			continue
+		}
+
+		if spawnCfg.EndFrame > 0 && g.levelTimer > spawnCfg.EndFrame {
+			continue
+		}
+		g.spawnTimers[spawnCfg.EnemyType]++
+		if g.spawnTimers[spawnCfg.EnemyType] >= spawnCfg.SpawnRate {
+			g.spawnTimers[spawnCfg.EnemyType] = 0
+			count := spawnCfg.MinSpawns
+			if spawnCfg.MaxSpawns > spawnCfg.MinSpawns {
+				count += rand.IntN(spawnCfg.MaxSpawns - spawnCfg.MinSpawns + 1)
 			}
 
-			enemy := CreateEnemy(spawnConfig.EnemyType, 650, y, g.enemyImage)
-			g.enemies = append(g.enemies, enemy)
+			for i := 0; i < count; i++ {
+				g.spawnEnemy(spawnCfg)
+			}
 		}
 	}
 
@@ -76,6 +107,39 @@ func (g *Game) Update() error {
 	}
 
 	return nil
+}
+
+func (g *Game) spawnEnemy(cfg SpawnConfig) {
+	y := 180.0
+	if cfg.RandomY {
+		y = rand.Float64() * 360
+	}
+
+	enemy := CreateEnemy(cfg.EnemyType, 650+rand.Float64()*100, y, g.enemyImage)
+	g.enemies = append(g.enemies, enemy)
+	g.spawnCounts[cfg.EnemyType]++
+}
+
+func (g *Game) completeLevel() {
+	g.state = StateLevelComplete
+}
+
+func (g *Game) loadLevel(level *LevelConfig) {
+	g.currentLevel = level
+	g.levelTimer = 0
+	g.enemies = []Enemy{}
+	g.spawnTimers = make(map[EnemyType]int)
+	g.spawnCounts = make(map[EnemyType]int)
+	g.bossKilled = false
+
+	g.background = &Background{
+		layers: []*Layer{
+			{img: loadImage(level.BackgroundPaths[0]), speed: 0.5},
+			{img: loadImage(level.BackgroundPaths[1]), speed: 1.0},
+			{img: loadImage(level.BackgroundPaths[2]), speed: 1.5},
+			{img: loadImage(level.BackgroundPaths[3]), speed: 4.0},
+		},
+	}
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
@@ -135,6 +199,7 @@ func main() {
 		bulletImg:    bImg,
 		enemyImage:   enemyImages,
 		spawnTimers:  make(map[EnemyType]int),
+		spawnCounts:  make(map[EnemyType]int),
 		currentLevel: level,
 	}
 
