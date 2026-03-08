@@ -37,6 +37,12 @@ type LevelConfig struct {
 	Duration        int
 	BossType        EnemyType
 	NextLevel       func() *LevelConfig
+	CoinSpawnConfig CoinSpawnConfig
+}
+
+type CoinSpawnConfig struct {
+	SpawnRate int
+	RandomY   bool
 }
 
 func GetLevel1() *LevelConfig {
@@ -55,6 +61,10 @@ func GetLevel1() *LevelConfig {
 		EndCondition: EndOnTimer,
 		Duration:     Seconds30,
 		NextLevel:    GetLevel2,
+		CoinSpawnConfig: CoinSpawnConfig{
+			SpawnRate: 180,
+			RandomY:   true,
+		},
 	}
 }
 

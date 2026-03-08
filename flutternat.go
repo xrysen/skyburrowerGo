@@ -86,5 +86,11 @@ func (f *Flutternat) IsDead() bool {
 }
 
 func (f *Flutternat) OnDeath(game *Game) {
+	size := SmallCoin
+	if ShouldSpawnBigCoin(game.player.luck, 1) {
+		size = BigCoin
+	}
+	coin := NewCoin(f.x, f.y, size, game.coinImg)
+	game.coins = append(game.coins, coin)
 	// TODO: if boss, set bossKilled to true
 }

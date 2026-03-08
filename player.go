@@ -20,6 +20,8 @@ type Player struct {
 	maxHealth       int
 	hitFlashTimer   int
 	invincibleTimer int
+	luck            int
+	coins           int
 }
 
 func NewPlayer(img *ebiten.Image) *Player {
@@ -32,8 +34,10 @@ func NewPlayer(img *ebiten.Image) *Player {
 		frameCounter: 0,
 		speedLevel:   1,
 		fireInterval: 30,
-		health:       10,
-		maxHealth:    10,
+		health:       3,
+		maxHealth:    3,
+		luck:         1,
+		coins:        0,
 	}
 }
 

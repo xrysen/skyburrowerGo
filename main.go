@@ -24,20 +24,22 @@ const (
 )
 
 type Game struct {
-	player       *Player
-	background   *Background
-	bullets      []*Bullet
-	bulletImg    *ebiten.Image
-	enemies      []Enemy
-	enemyImage   map[EnemyType]*ebiten.Image
-	spawnTimers  map[EnemyType]int
-	spawnCounts  map[EnemyType]int
-	currentLevel *LevelConfig
-	levelTimer   int
-	hud          *HUD
-	coins        int
-	state        GameState
-	bossKilled   bool
+	player         *Player
+	background     *Background
+	bullets        []*Bullet
+	bulletImg      *ebiten.Image
+	enemies        []Enemy
+	enemyImage     map[EnemyType]*ebiten.Image
+	spawnTimers    map[EnemyType]int
+	spawnCounts    map[EnemyType]int
+	currentLevel   *LevelConfig
+	levelTimer     int
+	hud            *HUD
+	coins          []*Coin
+	coinImg        *ebiten.Image
+	coinSpawnTimer int
+	state          GameState
+	bossKilled     bool
 
 	fadeAlpha float64
 	fadeSpeed float64
@@ -128,6 +130,55 @@ func (g *Game) Update() error {
 				for i := 0; i < count; i++ {
 					g.spawnEnemy(spawnCfg)
 				}
+			}
+		}
+
+		g.coinSpawnTimer++
+		spawnRate := 120 - (g.player.luck * 10)
+		if spawnRate < 50 {
+			spawnRate = 50
+		}
+		if g.coinSpawnTimer >= spawnRate {
+			g.coinSpawnTimer = 0
+
+			maxCoins := 2 + (g.player.luck / 2)
+			if maxCoins > 5 {
+				maxCoins = 5 // Cap at 5 coins
+			}
+
+			numCoins := 1 + rand.IntN(maxCoins)
+			for i := 0; i < numCoins; i++ {
+				y := rand.Float64() * 340
+				size := SmallCoin
+				if ShouldSpawnBigCoin(g.player.luck, 0) {
+					size = BigCoin
+				}
+				coin := NewCoin(650+rand.Float64()*100, y, size, g.coinImg)
+				g.coins = append(g.coins, coin)
+			}
+		}
+
+		var activeCoins []*Coin
+		for _, c := range g.coins {
+			c.Update()
+			if !c.collected && c.x > -50 {
+				activeCoins = append(activeCoins, c)
+			}
+		}
+		g.coins = activeCoins
+
+		for _, c := range g.coins {
+			if c.collected {
+				continue
+			}
+			coinW := float64(c.frameWidth) * c.scale
+			coinH := float64(c.frameHeight) * c.scale
+			playerW := float64(g.player.frameWidth)
+			playerH := float64(g.player.frameHeight)
+
+			if checkCollision(g.player.x, g.player.y, playerW, playerH, c.x, c.y, coinW, coinH) {
+				c.collected = true
+				g.player.coins += c.value
 			}
 		}
 
@@ -228,6 +279,10 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		g.background.Draw(screen, i)
 	}
 
+	for _, c := range g.coins {
+		c.Draw(screen)
+	}
+
 	for _, b := range g.bullets {
 		b.Draw(screen)
 	}
@@ -244,7 +299,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		vector.FillRect(screen, 0, 0, 640, 360, color.RGBA{0, 0, 0, uint8(g.fadeAlpha * 255)}, false)
 	}
 
-	g.hud.Draw(screen, g.player.health, g.player.maxHealth, g.coins)
+	g.hud.Draw(screen, g.player.health, g.player.maxHealth, g.player.coins)
 
 }
 
@@ -264,6 +319,8 @@ func main() {
 
 	fontImg := loadImage("Assets/UI/saikyoFonto.png")
 	font := NewBitmapFont(fontImg, 18, 18)
+
+	coinImg := loadImage("Assets/Items/coin.png")
 
 	level := GetLevel1()
 
@@ -296,6 +353,7 @@ func main() {
 		spawnTimers:  make(map[EnemyType]int),
 		spawnCounts:  make(map[EnemyType]int),
 		currentLevel: level,
+		coinImg:      coinImg,
 
 		fadeAlpha: 1.0,
 		fadeSpeed: FadeSpeed,
