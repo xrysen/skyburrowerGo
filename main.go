@@ -34,6 +34,8 @@ type Game struct {
 	spawnCounts  map[EnemyType]int
 	currentLevel *LevelConfig
 	levelTimer   int
+	hud          *HUD
+	coins        int
 	state        GameState
 	bossKilled   bool
 
@@ -242,13 +244,8 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		vector.FillRect(screen, 0, 0, 640, 360, color.RGBA{0, 0, 0, uint8(g.fadeAlpha * 255)}, false)
 	}
 
-	currentSeconds := g.levelTimer / FPS
-	totalSeconds := g.currentLevel.Duration / FPS
-	remainingSeconds := totalSeconds - currentSeconds
+	g.hud.Draw(screen, g.player.health, g.player.maxHealth, g.coins)
 
-	debugMsg := fmt.Sprintf("Time: %d/%d sec (-%d remaining)\nState: &v\nEnemies: %d",
-		currentSeconds, totalSeconds, remainingSeconds, g.state, len(g.enemies))
-	ebitenutil.DebugPrint(screen, debugMsg)
 }
 
 func (g *Game) Layout(w, h int) (int, int) {
@@ -264,6 +261,10 @@ func loadImage(path string) *ebiten.Image {
 }
 
 func main() {
+
+	fontImg := loadImage("Assets/UI/saikyoFonto.png")
+	font := NewBitmapFont(fontImg, 18, 18)
+
 	level := GetLevel1()
 
 	pImg := loadImage("Assets/Player/MeadowSprite-sheet.png")
@@ -272,6 +273,8 @@ func main() {
 	bg2 := loadImage(level.BackgroundPaths[2])
 	bg3 := loadImage(level.BackgroundPaths[3])
 	bImg := loadImage("Assets/Bullets/seedShot.png")
+	heartImg := loadImage("Assets/UI/heart.png")
+	backgroundImg := loadImage("Assets/UI/ui.png")
 
 	enemyImages := map[EnemyType]*ebiten.Image{
 		FlutternatType: loadImage("Assets/Enemies/Flutternat/flutterNat.png"),
@@ -279,6 +282,7 @@ func main() {
 
 	game := &Game{
 		player: NewPlayer(pImg),
+		hud:    NewHUD(backgroundImg, heartImg, font),
 		background: &Background{
 			layers: []*Layer{
 				{img: bg0, speed: 0.5},

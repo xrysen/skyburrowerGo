@@ -32,8 +32,8 @@ func NewPlayer(img *ebiten.Image) *Player {
 		frameCounter: 0,
 		speedLevel:   1,
 		fireInterval: 30,
-		health:       3,
-		maxHealth:    3,
+		health:       10,
+		maxHealth:    10,
 	}
 }
 
