@@ -70,7 +70,7 @@ func (g *Game) Update() error {
 	// Always update visuals (even during fade-out)
 	g.background.Update()
 	g.player.Update(g)
-	
+
 	var activeBullets []*Bullet
 	for _, b := range g.bullets {
 		b.Update()
@@ -79,7 +79,7 @@ func (g *Game) Update() error {
 		}
 	}
 	g.bullets = activeBullets
-	
+
 	var activeEnemies []Enemy
 	for _, e := range g.enemies {
 		e.Update(g.player.x, g.player.y, g)
@@ -139,6 +139,24 @@ func (g *Game) Update() error {
 					b.y = 1000
 					if e.IsDead() {
 						e.OnDeath(g)
+					}
+				}
+			}
+
+			for _, e := range g.enemies {
+				ex, ey := e.GetPosition()
+				ew, eh := e.GetBounds()
+
+				hitboxWidth := float64(g.player.frameWidth) * 0.7
+				hitboxHeight := float64(g.player.frameHeight) * 0.7
+				offsetX := float64(g.player.frameWidth) * 0.15
+				offsetY := float64(g.player.frameHeight) * 0.15
+
+				if checkCollision(g.player.x+offsetX, g.player.y+offsetY, hitboxWidth, hitboxHeight, ex, ey, ew, eh) {
+					g.player.TakeDamage(1)
+
+					if g.player.IsDead() {
+						g.gameOver()
 					}
 				}
 			}
@@ -292,4 +310,9 @@ func main() {
 		log.Fatal(err)
 	}
 
+}
+
+func (g *Game) gameOver() {
+	g.state = StateGameOver
+	fmt.Println("Game Over!")
 }

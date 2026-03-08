@@ -15,6 +15,11 @@ type Player struct {
 	speedLevel   int
 	fireCounter  int
 	fireInterval int
+
+	health          int
+	maxHealth       int
+	hitFlashTimer   int
+	invincibleTimer int
 }
 
 func NewPlayer(img *ebiten.Image) *Player {
@@ -27,6 +32,8 @@ func NewPlayer(img *ebiten.Image) *Player {
 		frameCounter: 0,
 		speedLevel:   1,
 		fireInterval: 30,
+		health:       3,
+		maxHealth:    3,
 	}
 }
 
@@ -78,9 +85,18 @@ func (p *Player) Update(g *Game) {
 
 	}
 	p.frameCounter++
+
+	if p.invincibleTimer > 0 {
+		p.invincibleTimer--
+	}
 }
 
 func (p *Player) Draw(screen *ebiten.Image) {
+	if p.invincibleTimer > 0 {
+		if (p.invincibleTimer/8)%2 == 1 {
+			return
+		}
+	}
 	// Shows from 0 or 1
 	frame := (p.frameCounter / 10) % 2
 
@@ -91,4 +107,17 @@ func (p *Player) Draw(screen *ebiten.Image) {
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(p.x, p.y)
 	screen.DrawImage(subImg, op)
+}
+
+func (p *Player) TakeDamage(amount int) {
+	if p.invincibleTimer > 0 {
+		return
+	}
+	p.health -= amount
+	p.hitFlashTimer = 100
+	p.invincibleTimer = 100
+}
+
+func (p *Player) IsDead() bool {
+	return p.health <= 0
 }
