@@ -24,6 +24,8 @@ const (
 )
 
 type Game struct {
+	currentScreen  Screen
+	worldMap       *WorldMap
 	player         *Player
 	background     *Background
 	bullets        []*Bullet
@@ -49,6 +51,18 @@ type Game struct {
 
 func (g *Game) Update() error {
 
+	switch g.currentScreen {
+	case ScreenWorldMap:
+		g.worldMap.Update(g)
+	case ScreenPlaying:
+		g.updatePlaying()
+	case ScreenGameOver:
+		g.updateGameOver()
+	}
+	return nil
+}
+
+func (g *Game) updatePlaying() {
 	if g.isFading {
 		if g.fadeIn {
 			// Fade in
@@ -65,7 +79,6 @@ func (g *Game) Update() error {
 				g.isFading = false
 				if g.state == StateLevelComplete {
 					g.transitionToNextLevel()
-					return nil
 				}
 			}
 		}
@@ -215,8 +228,20 @@ func (g *Game) Update() error {
 			}
 		}
 	}
+}
 
-	return nil
+func (g *Game) startLevel(level *LevelConfig) {
+	g.loadLevel(level)
+	g.state = StateLevel
+	g.currentScreen = ScreenPlaying
+}
+
+func (g *Game) updateGameOver() {
+	// Todo
+}
+
+func (g *Game) drawGameOver(screen *ebiten.Image) {
+	ebitenutil.DebugPrint(screen, "Game Over")
 }
 
 func (g *Game) spawnEnemy(cfg SpawnConfig) {
@@ -240,14 +265,7 @@ func (g *Game) completeLevel() {
 }
 
 func (g *Game) transitionToNextLevel() {
-	if g.currentLevel.NextLevel != nil {
-		nextLevel := g.currentLevel.NextLevel()
-		g.loadLevel(nextLevel)
-		g.state = StateLevel
-	} else {
-		g.state = StateGameOver
-		fmt.Println("Game Complete!")
-	}
+	g.currentScreen = ScreenWorldMap
 }
 
 func (g *Game) loadLevel(level *LevelConfig) {
@@ -275,6 +293,18 @@ func (g *Game) loadLevel(level *LevelConfig) {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
+
+	switch g.currentScreen {
+	case ScreenWorldMap:
+		g.worldMap.Draw(screen)
+	case ScreenPlaying:
+		g.drawPlaying(screen)
+	case ScreenGameOver:
+		g.drawGameOver(screen)
+	}
+}
+
+func (g *Game) drawPlaying(screen *ebiten.Image) {
 	for i := 0; i < 3; i++ {
 		g.background.Draw(screen, i)
 	}
@@ -300,7 +330,6 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	}
 
 	g.hud.Draw(screen, g.player.health, g.player.maxHealth, g.player.coins)
-
 }
 
 func (g *Game) Layout(w, h int) (int, int) {
@@ -317,48 +346,19 @@ func loadImage(path string) *ebiten.Image {
 
 func main() {
 
-	fontImg := loadImage("Assets/UI/saikyoFonto.png")
-	font := NewBitmapFont(fontImg, 18, 18)
-
-	coinImg := loadImage("Assets/Items/coin.png")
-
-	level := GetLevel1()
-
-	pImg := loadImage("Assets/Player/MeadowSprite-sheet.png")
-	bg0 := loadImage(level.BackgroundPaths[0])
-	bg1 := loadImage(level.BackgroundPaths[1])
-	bg2 := loadImage(level.BackgroundPaths[2])
-	bg3 := loadImage(level.BackgroundPaths[3])
-	bImg := loadImage("Assets/Bullets/seedShot.png")
-	heartImg := loadImage("Assets/UI/heart.png")
-	backgroundImg := loadImage("Assets/UI/ui.png")
-
-	enemyImages := map[EnemyType]*ebiten.Image{
-		FlutternatType: loadImage("Assets/Enemies/Flutternat/flutterNat.png"),
-	}
+	assets := LoadAssets()
+	font := NewBitmapFont(assets.FontImg, 18, 18)
 
 	game := &Game{
-		player: NewPlayer(pImg),
-		hud:    NewHUD(backgroundImg, heartImg, font),
-		background: &Background{
-			layers: []*Layer{
-				{img: bg0, speed: 0.5},
-				{img: bg1, speed: 1.0},
-				{img: bg2, speed: 1.5},
-				{img: bg3, speed: 4.0},
-			},
-		},
-		bulletImg:    bImg,
-		enemyImage:   enemyImages,
-		spawnTimers:  make(map[EnemyType]int),
-		spawnCounts:  make(map[EnemyType]int),
-		currentLevel: level,
-		coinImg:      coinImg,
-
-		fadeAlpha: 1.0,
-		fadeSpeed: FadeSpeed,
-		isFading:  true,
-		fadeIn:    true,
+		currentScreen: ScreenWorldMap,
+		worldMap:      NewWorldMap(assets),
+		player:        NewPlayer(assets.PlayerImg),
+		hud:           NewHUD(assets.HudBg, assets.HeartImg, font),
+		bulletImg:     assets.BulletImg,
+		enemyImage:    assets.EnemyImages,
+		spawnTimers:   make(map[EnemyType]int),
+		spawnCounts:   make(map[EnemyType]int),
+		coinImg:       assets.CoinImg,
 	}
 
 	ebiten.SetWindowSize(640, 360)
