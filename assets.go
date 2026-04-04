@@ -12,10 +12,11 @@ type Assets struct {
 
 	EnemyImages map[EnemyType]*ebiten.Image
 
-	HeartImg *ebiten.Image
-	HudBg    *ebiten.Image
-	FontImg  *ebiten.Image
-	CoinImg  *ebiten.Image
+	HeartImg  *ebiten.Image
+	HudBg     *ebiten.Image
+	FontImg   *ebiten.Image
+	CoinImg   *ebiten.Image
+	CarrotImg *ebiten.Image
 
 	GearsBg           *ebiten.Image
 	UpgradeLayer      *ebiten.Image
@@ -23,6 +24,8 @@ type Assets struct {
 	LevelSelectButton *ebiten.Image
 	LockIcon          *ebiten.Image
 	LevelDigits       [10]*ebiten.Image
+	LsCarrotEmpty     *ebiten.Image
+	LsCarrotFull      *ebiten.Image
 
 	LevelBgs map[string]*ebiten.Image
 }
@@ -41,6 +44,7 @@ func LoadAssets() *Assets {
 	a.HudBg = loadImage("Assets/UI/ui.png")
 	a.FontImg = loadImage("Assets/UI/saikyoFonto.png")
 	a.CoinImg = loadImage("Assets/Items/coin.png")
+	a.CarrotImg = loadImage("Assets/Items/carrot.png")
 
 	a.GearsBg = loadImage("Assets/WorldMap/gearsBg.png")
 	a.UpgradeLayer = loadImage("Assets/WorldMap/UpgradeLayer.png")
@@ -50,6 +54,8 @@ func LoadAssets() *Assets {
 	for d := 0; d < 10; d++ {
 		a.LevelDigits[d] = loadImage(fmt.Sprintf("Assets/WorldMap/%d.png", d))
 	}
+	a.LsCarrotEmpty = loadImage("Assets/WorldMap/lsCarrotEmpty.png")
+	a.LsCarrotFull = loadImage("Assets/WorldMap/lsCarrotFull.png")
 
 	a.LevelBgs = map[string]*ebiten.Image{
 		"Level1": loadImage("Levels/Level1/lvl1-1.png"),

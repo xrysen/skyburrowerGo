@@ -24,24 +24,28 @@ const (
 )
 
 type Game struct {
-	currentScreen  Screen
-	worldMap       *WorldMap
-	player         *Player
-	background     *Background
-	bullets        []*Bullet
-	bulletImg      *ebiten.Image
-	enemies        []Enemy
-	enemyImage     map[EnemyType]*ebiten.Image
-	spawnTimers    map[EnemyType]int
-	spawnCounts    map[EnemyType]int
-	currentLevel   *LevelConfig
-	levelTimer     int
-	hud            *HUD
-	coins          []*Coin
-	coinImg        *ebiten.Image
-	coinSpawnTimer int
-	state          GameState
-	bossKilled     bool
+	currentScreen     Screen
+	worldMap          *WorldMap
+	player            *Player
+	background        *Background
+	bullets           []*Bullet
+	bulletImg         *ebiten.Image
+	enemies           []Enemy
+	enemyImage        map[EnemyType]*ebiten.Image
+	spawnTimers       map[EnemyType]int
+	spawnCounts       map[EnemyType]int
+	currentLevel      *LevelConfig
+	levelTimer        int
+	hud               *HUD
+	coins             []*Coin
+	coinImg           *ebiten.Image
+	coinSpawnTimer    int
+	levelCarrots      []*LevelCarrot
+	carrotImg         *ebiten.Image
+	carrotSpawnFrames [CarrotsPerLevel]int
+	carrotSpawned     [CarrotsPerLevel]bool
+	state             GameState
+	bossKilled        bool
 
 	fadeAlpha float64
 	fadeSpeed float64
@@ -50,6 +54,13 @@ type Game struct {
 
 	// Levels 1..highestUnlockedLevel are playable on the world map (start: only 1).
 	highestUnlockedLevel int
+
+	// Per world level (index 0 = level 1): bits 0–4 = which of the 5 bonus carrots
+	// have ever been collected (merged across replays). See CarrotsPerLevel.
+	levelCarrotMask [WorldLevelCount]uint8
+	// Bits collected during the current run; merged into levelCarrotMask when the
+	// level ends and returns to the map. Gameplay sets bits via CollectLevelCarrot.
+	runLevelCarrotMask uint8
 }
 
 func (g *Game) Update() error {
@@ -89,6 +100,8 @@ func (g *Game) updatePlaying() {
 				g.isFading = false
 				if g.state == StateLevelComplete {
 					g.transitionToNextLevel()
+				} else if g.state == StateGameOver {
+					g.transitionToWorldMapFromGameOver()
 				}
 			}
 		}
@@ -118,7 +131,7 @@ func (g *Game) updatePlaying() {
 	g.enemies = activeEnemies
 
 	// Only update gameplay logic if level is active
-	if g.state != StateLevelComplete {
+	if g.state != StateLevelComplete && g.state != StateGameOver {
 
 		g.levelTimer++
 
@@ -171,7 +184,7 @@ func (g *Game) updatePlaying() {
 
 			numCoins := 1 + rand.IntN(maxCoins)
 			for i := 0; i < numCoins; i++ {
-				y := rand.Float64() * 340
+				y := rand.Float64() * float64(ScreenHeight)
 				size := SmallCoin
 				if ShouldSpawnBigCoin(g.player.luck, 0) {
 					size = BigCoin
@@ -189,6 +202,42 @@ func (g *Game) updatePlaying() {
 			}
 		}
 		g.coins = activeCoins
+
+		for i := 0; i < CarrotsPerLevel; i++ {
+			if g.carrotSpawned[i] {
+				continue
+			}
+			if g.levelTimer < g.carrotSpawnFrames[i] {
+				continue
+			}
+			cy := rand.Float64() * float64(max(1, ScreenHeight-g.carrotImg.Bounds().Dy()))
+			carrot := NewLevelCarrot(650+rand.Float64()*100, cy, i, g.carrotImg)
+			g.levelCarrots = append(g.levelCarrots, carrot)
+			g.carrotSpawned[i] = true
+		}
+
+		var activeCarrots []*LevelCarrot
+		for _, c := range g.levelCarrots {
+			c.Update()
+			if !c.collected && c.x > -50 {
+				activeCarrots = append(activeCarrots, c)
+			}
+		}
+		g.levelCarrots = activeCarrots
+
+		for _, c := range g.levelCarrots {
+			if c.collected {
+				continue
+			}
+			cw := float64(c.frameWidth)
+			ch := float64(c.frameHeight)
+			playerW := float64(g.player.frameWidth)
+			playerH := float64(g.player.frameHeight)
+			if checkCollision(g.player.x, g.player.y, playerW, playerH, c.x, c.y, cw, ch) {
+				c.collected = true
+				g.CollectLevelCarrot(c.slotIndex)
+			}
+		}
 
 		for _, c := range g.coins {
 			if c.collected {
@@ -247,7 +296,8 @@ func (g *Game) startLevel(level *LevelConfig) {
 }
 
 func (g *Game) updateGameOver() {
-	// Todo
+	// Game over fade happens in updatePlaying()
+	// This function remains empty since we never actually switch to ScreenGameOver
 }
 
 func (g *Game) drawGameOver(screen *ebiten.Image) {
@@ -279,11 +329,49 @@ func (g *Game) transitionToNextLevel() {
 		next := min(g.currentLevel.WorldLevel+1, 20)
 		g.highestUnlockedLevel = max(g.highestUnlockedLevel, next)
 	}
+	g.commitRunCarrotProgress()
 	g.currentScreen = ScreenWorldMap
+}
+
+func (g *Game) transitionToWorldMapFromGameOver() {
+	// Reset player state (but keep coins as per requirement)
+	g.player.health = g.player.maxHealth
+	g.player.x = 50
+	g.player.y = 100
+	g.player.invincibleTimer = 0
+	g.player.hitFlashTimer = 0
+
+	// Clear all active game objects
+	g.enemies = []Enemy{}
+	g.bullets = []*Bullet{}
+	g.coins = []*Coin{}
+	g.levelCarrots = []*LevelCarrot{}
+
+	// Reset timers and counters
+	g.levelTimer = 0
+	g.spawnTimers = make(map[EnemyType]int)
+	g.spawnCounts = make(map[EnemyType]int)
+	g.coinSpawnTimer = 0
+	g.bossKilled = false
+
+	// Reset carrot spawn tracking
+	for i := range g.carrotSpawned {
+		g.carrotSpawned[i] = false
+	}
+
+	// Do NOT commit carrot progress (player failed the level)
+	g.runLevelCarrotMask = 0
+
+	// Do NOT unlock next level (player didn't complete)
+
+	// Return to worldmap
+	g.currentScreen = ScreenWorldMap
+	g.state = StateLevel // Reset state for next level attempt
 }
 
 func (g *Game) loadLevel(level *LevelConfig) {
 	g.currentLevel = level
+	g.runLevelCarrotMask = 0
 	g.levelTimer = 0
 	g.enemies = []Enemy{}
 	g.spawnTimers = make(map[EnemyType]int)
@@ -304,13 +392,44 @@ func (g *Game) loadLevel(level *LevelConfig) {
 			{img: loadImage(level.BackgroundPaths[3]), speed: 4.0},
 		},
 	}
+
+	g.levelCarrots = nil
+	g.carrotSpawnFrames = planCarrotSpawnFrames(level)
+	for i := range g.carrotSpawned {
+		g.carrotSpawned[i] = false
+	}
+}
+
+// commitRunCarrotProgress ORs this run’s carrot bits into the persistent per-level mask.
+func (g *Game) commitRunCarrotProgress() {
+	if g.currentLevel == nil {
+		return
+	}
+	wl := g.currentLevel.WorldLevel
+	if wl < 1 || wl > WorldLevelCount {
+		return
+	}
+	const carrotBitsMask = (1 << CarrotsPerLevel) - 1
+	g.levelCarrotMask[wl-1] |= g.runLevelCarrotMask & uint8(carrotBitsMask)
+}
+
+// CollectLevelCarrot records bonus carrot `index` (0–4) for the current level this run.
+// Bit/layout order: 0 = left of number, 1–3 = below (L→R), 4 = right of number.
+func (g *Game) CollectLevelCarrot(index int) {
+	if g.currentScreen != ScreenPlaying || g.currentLevel == nil {
+		return
+	}
+	if index < 0 || index >= CarrotsPerLevel {
+		return
+	}
+	g.runLevelCarrotMask |= uint8(1) << index
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
 
 	switch g.currentScreen {
 	case ScreenWorldMap:
-		g.worldMap.Draw(screen, g.highestUnlockedLevel)
+		g.worldMap.Draw(screen, g)
 	case ScreenPlaying:
 		g.drawPlaying(screen)
 	case ScreenGameOver:
@@ -324,6 +443,10 @@ func (g *Game) drawPlaying(screen *ebiten.Image) {
 	}
 
 	for _, c := range g.coins {
+		c.Draw(screen)
+	}
+
+	for _, c := range g.levelCarrots {
 		c.Draw(screen)
 	}
 
@@ -343,7 +466,7 @@ func (g *Game) drawPlaying(screen *ebiten.Image) {
 		vector.FillRect(screen, 0, 0, float32(ScreenWidth), float32(ScreenHeight), color.RGBA{0, 0, 0, uint8(g.fadeAlpha * 255)}, false)
 	}
 
-	g.hud.Draw(screen, g.player.health, g.player.maxHealth, g.player.coins)
+	g.hud.Draw(screen, g.player.health, g.player.maxHealth, g.player.coins, g.runLevelCarrotMask)
 }
 
 func (g *Game) Layout(w, h int) (int, int) {
@@ -368,12 +491,13 @@ func main() {
 		highestUnlockedLevel: 1,
 		worldMap:             NewWorldMap(assets),
 		player:               NewPlayer(assets.PlayerImg),
-		hud:                  NewHUD(assets.HudBg, assets.HeartImg, font),
+		hud:                  NewHUD(assets.HudBg, assets.HeartImg, assets.LsCarrotEmpty, assets.LsCarrotFull, font),
 		bulletImg:            assets.BulletImg,
 		enemyImage:           assets.EnemyImages,
 		spawnTimers:          make(map[EnemyType]int),
 		spawnCounts:          make(map[EnemyType]int),
 		coinImg:              assets.CoinImg,
+		carrotImg:            assets.CarrotImg,
 	}
 
 	ebiten.SetWindowSize(ScreenWidth, ScreenHeight)
@@ -389,5 +513,10 @@ func main() {
 
 func (g *Game) gameOver() {
 	g.state = StateGameOver
-	fmt.Println("Game Over!")
+
+	// Start fadeout (same as completeLevel)
+	g.fadeAlpha = 0.0
+	g.fadeSpeed = FadeSpeed
+	g.isFading = true
+	g.fadeIn = false
 }

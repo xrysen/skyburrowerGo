@@ -1,5 +1,11 @@
 package main
 
+const (
+	WorldLevelCount = 20
+	// CarrotsPerLevel is how many bonus carrots exist per level (world-map layout uses 5 slots).
+	CarrotsPerLevel = 5
+)
+
 type LevelEndCondition int
 
 const (

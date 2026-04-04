@@ -18,7 +18,12 @@ const (
 	levelGridCols     = 5
 	levelGridRows     = 4
 
-	levelNumberDigitGap = 1 // horizontal space between digits when drawing 10–20
+	levelNumberDigitGap = 1  // horizontal space between digits when drawing 10–20
+	levelNumberOffsetY  = -3 // shift level digits (and carrot anchor) up in the cell
+
+	carrotSideGap      = 5 // horizontal space from number to left/right carrots
+	carrotBelowGap     = 3 // vertical gap from number bottom to the row of 3
+	carrotBelowSpacing = 2 // horizontal gap between the three bottom carrots
 )
 
 type WorldMap struct {
@@ -28,6 +33,8 @@ type WorldMap struct {
 	levelSelectButton *ebiten.Image
 	lockIcon          *ebiten.Image
 	levelDigits       [10]*ebiten.Image
+	carrotEmpty       *ebiten.Image
+	carrotFull        *ebiten.Image
 }
 
 func NewWorldMap(assets *Assets) *WorldMap {
@@ -38,6 +45,8 @@ func NewWorldMap(assets *Assets) *WorldMap {
 		levelSelectButton: assets.LevelSelectButton,
 		lockIcon:          assets.LockIcon,
 		levelDigits:       assets.LevelDigits,
+		carrotEmpty:       assets.LsCarrotEmpty,
+		carrotFull:        assets.LsCarrotFull,
 	}
 }
 
@@ -76,7 +85,7 @@ func (wm *WorldMap) levelSlotAtScreen(x, y int) (level int, ok bool) {
 	return 0, false
 }
 
-func (wm *WorldMap) Draw(screen *ebiten.Image, highestUnlockedLevel int) {
+func (wm *WorldMap) Draw(screen *ebiten.Image, g *Game) {
 	gearsOp := &ebiten.DrawImageOptions{}
 	gearsOp.GeoM.Translate(0, float64(gearsBgY))
 	screen.DrawImage(wm.gearsBg, gearsOp)
@@ -85,10 +94,10 @@ func (wm *WorldMap) Draw(screen *ebiten.Image, highestUnlockedLevel int) {
 	screen.DrawImage(wm.upgradeLayer, upgradeOp)
 	levelSelectOp := &ebiten.DrawImageOptions{}
 	screen.DrawImage(wm.levelSelectLayer, levelSelectOp)
-	wm.drawLevelSelectButtons(screen, highestUnlockedLevel)
+	wm.drawLevelSelectButtons(screen, g)
 }
 
-func (wm *WorldMap) drawLevelSelectButtons(screen *ebiten.Image, highestUnlockedLevel int) {
+func (wm *WorldMap) drawLevelSelectButtons(screen *ebiten.Image, g *Game) {
 	btn := wm.levelSelectButton
 
 	for row := 0; row < levelGridRows; row++ {
@@ -99,8 +108,13 @@ func (wm *WorldMap) drawLevelSelectButtons(screen *ebiten.Image, highestUnlocked
 			op.GeoM.Translate(x, y)
 			screen.DrawImage(btn, op)
 			level := row*levelGridCols + col + 1
-			if level <= highestUnlockedLevel {
+			if level <= g.highestUnlockedLevel {
 				wm.drawLevelNumberOnButton(screen, x, y, level)
+				var mask uint8
+				if level >= 1 && level <= WorldLevelCount {
+					mask = g.levelCarrotMask[level-1]
+				}
+				wm.drawLevelCarrots(screen, x, y, level, mask)
 			} else {
 				wm.drawLockOnButton(screen, x, y)
 			}
@@ -132,6 +146,77 @@ func levelNumberDigitIndices(n int) []int {
 	}
 }
 
+// levelNumberRect returns the digit bounds for a level label (for carrot placement).
+func (wm *WorldMap) levelNumberRect(cellX, cellY float64, level int) (left, top, right, bottom float64, ok bool) {
+	ds := levelNumberDigitIndices(level)
+	if len(ds) == 0 {
+		return 0, 0, 0, 0, false
+	}
+	btnW := float64(wm.levelSelectButton.Bounds().Dx())
+	btnH := float64(wm.levelSelectButton.Bounds().Dy())
+
+	var totalW float64
+	maxDigitH := 0
+	for i, di := range ds {
+		if i > 0 {
+			totalW += float64(levelNumberDigitGap)
+		}
+		img := wm.levelDigits[di]
+		totalW += float64(img.Bounds().Dx())
+		h := img.Bounds().Dy()
+		if h > maxDigitH {
+			maxDigitH = h
+		}
+	}
+
+	left = cellX + (btnW-totalW)/2
+	top = cellY + (btnH-float64(maxDigitH))/2 + float64(levelNumberOffsetY)
+	right = left + totalW
+	bottom = top + float64(maxDigitH)
+	return left, top, right, bottom, true
+}
+
+// drawLevelCarrots draws 5 carrots around the level number: bit 0 left, 1–3 below (L→R), 4 right.
+func (wm *WorldMap) drawLevelCarrots(screen *ebiten.Image, cellX, cellY float64, level int, mask uint8) {
+	nl, nt, nr, nb, ok := wm.levelNumberRect(cellX, cellY, level)
+	if !ok {
+		return
+	}
+	cw := float64(wm.carrotEmpty.Bounds().Dx())
+	ch := float64(wm.carrotEmpty.Bounds().Dy())
+	sideGap := float64(carrotSideGap)
+	belowGap := float64(carrotBelowGap)
+	belowSp := float64(carrotBelowSpacing)
+	vCarrotY := nt + (nb-nt-ch)/2
+
+	type pos struct{ x, y float64 }
+	positions := [CarrotsPerLevel]pos{}
+
+	// 0: left of number (extra horizontal space vs below row)
+	positions[0] = pos{nl - sideGap - cw, vCarrotY}
+
+	// 1–3: below number, evenly spaced
+	belowY := nb + belowGap
+	rowW := 3*cw + 2*belowSp
+	startBelowX := nl + (nr-nl-rowW)/2
+	for i := 0; i < 3; i++ {
+		positions[1+i] = pos{startBelowX + float64(i)*(cw+belowSp), belowY}
+	}
+
+	// 4: right of number
+	positions[4] = pos{nr + sideGap, vCarrotY}
+
+	for slot := 0; slot < CarrotsPerLevel; slot++ {
+		img := wm.carrotEmpty
+		if (mask>>slot)&1 != 0 {
+			img = wm.carrotFull
+		}
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(positions[slot].x, positions[slot].y)
+		screen.DrawImage(img, op)
+	}
+}
+
 func (wm *WorldMap) drawLevelNumberOnButton(screen *ebiten.Image, cellX, cellY float64, level int) {
 	ds := levelNumberDigitIndices(level)
 	if len(ds) == 0 {
@@ -155,7 +240,7 @@ func (wm *WorldMap) drawLevelNumberOnButton(screen *ebiten.Image, cellX, cellY f
 	}
 
 	startX := cellX + (btnW-totalW)/2
-	startY := cellY + (btnH-float64(maxDigitH))/2
+	startY := cellY + (btnH-float64(maxDigitH))/2 + float64(levelNumberOffsetY)
 
 	x := startX
 	for i, di := range ds {
