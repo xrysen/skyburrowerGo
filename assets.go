@@ -1,6 +1,10 @@
 package main
 
-import "github.com/hajimehoshi/ebiten/v2"
+import (
+	"fmt"
+
+	"github.com/hajimehoshi/ebiten/v2"
+)
 
 type Assets struct {
 	PlayerImg *ebiten.Image
@@ -13,10 +17,12 @@ type Assets struct {
 	FontImg  *ebiten.Image
 	CoinImg  *ebiten.Image
 
-	GearsBg          *ebiten.Image
-	UpgradeLayer     *ebiten.Image
-	LevelSelectLayer *ebiten.Image
-	LockIcon         *ebiten.Image
+	GearsBg           *ebiten.Image
+	UpgradeLayer      *ebiten.Image
+	LevelSelectLayer  *ebiten.Image
+	LevelSelectButton *ebiten.Image
+	LockIcon          *ebiten.Image
+	LevelDigits       [10]*ebiten.Image
 
 	LevelBgs map[string]*ebiten.Image
 }
@@ -39,7 +45,11 @@ func LoadAssets() *Assets {
 	a.GearsBg = loadImage("Assets/WorldMap/gearsBg.png")
 	a.UpgradeLayer = loadImage("Assets/WorldMap/UpgradeLayer.png")
 	a.LevelSelectLayer = loadImage("Assets/WorldMap/wm.png")
+	a.LevelSelectButton = loadImage("Assets/WorldMap/levelSelectButton.png")
 	a.LockIcon = loadImage("Assets/WorldMap/lockIcon.png")
+	for d := 0; d < 10; d++ {
+		a.LevelDigits[d] = loadImage(fmt.Sprintf("Assets/WorldMap/%d.png", d))
+	}
 
 	a.LevelBgs = map[string]*ebiten.Image{
 		"Level1": loadImage("Levels/Level1/lvl1-1.png"),

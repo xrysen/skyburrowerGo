@@ -30,6 +30,7 @@ type SpawnConfig struct {
 }
 
 type LevelConfig struct {
+	WorldLevel      int // 1-based slot on the world map; used for unlock progression
 	Name            string
 	BackgroundPaths [4]string
 	SpawnConfigs    []SpawnConfig
@@ -47,7 +48,8 @@ type CoinSpawnConfig struct {
 
 func GetLevel1() *LevelConfig {
 	return &LevelConfig{
-		Name: "Forest Level",
+		WorldLevel: 1,
+		Name:       "Forest Level",
 		BackgroundPaths: [4]string{
 			"Levels/Level1/lvl1-1.png",
 			"Levels/Level1/lvl1-2.png",
@@ -68,9 +70,22 @@ func GetLevel1() *LevelConfig {
 	}
 }
 
+// GetLevelForWorldSlot returns the level for a world-map slot (1–20), or nil if not implemented yet.
+func GetLevelForWorldSlot(slot int) *LevelConfig {
+	switch slot {
+	case 1:
+		return GetLevel1()
+	case 2:
+		return GetLevel2()
+	default:
+		return nil
+	}
+}
+
 func GetLevel2() *LevelConfig {
 	return &LevelConfig{
-		Name: "Deep Forest",
+		WorldLevel: 2,
+		Name:       "Deep Forest",
 		BackgroundPaths: [4]string{
 			"Levels/Level1/lvl1-1.png",
 			"Levels/Level1/lvl1-2.png",

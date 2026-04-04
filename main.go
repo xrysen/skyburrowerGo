@@ -47,9 +47,19 @@ type Game struct {
 	fadeSpeed float64
 	isFading  bool
 	fadeIn    bool
+
+	// Levels 1..highestUnlockedLevel are playable on the world map (start: only 1).
+	highestUnlockedLevel int
 }
 
 func (g *Game) Update() error {
+
+	switch g.currentScreen {
+	case ScreenWorldMap, ScreenGameOver:
+		ebiten.SetCursorMode(ebiten.CursorModeVisible)
+	case ScreenPlaying:
+		ebiten.SetCursorMode(ebiten.CursorModeHidden)
+	}
 
 	switch g.currentScreen {
 	case ScreenWorldMap:
@@ -91,7 +101,7 @@ func (g *Game) updatePlaying() {
 	var activeBullets []*Bullet
 	for _, b := range g.bullets {
 		b.Update()
-		if b.x < 640 {
+		if b.x < ScreenWidth {
 			activeBullets = append(activeBullets, b)
 		}
 	}
@@ -245,9 +255,9 @@ func (g *Game) drawGameOver(screen *ebiten.Image) {
 }
 
 func (g *Game) spawnEnemy(cfg SpawnConfig) {
-	y := 180.0
+	y := float64(ScreenHeight) / 2
 	if cfg.RandomY {
-		y = rand.Float64() * 360
+		y = rand.Float64() * ScreenHeight
 	}
 
 	enemy := CreateEnemy(cfg.EnemyType, 650+rand.Float64()*100, y, g.enemyImage)
@@ -265,6 +275,10 @@ func (g *Game) completeLevel() {
 }
 
 func (g *Game) transitionToNextLevel() {
+	if g.currentLevel != nil && g.currentLevel.WorldLevel > 0 {
+		next := min(g.currentLevel.WorldLevel+1, 20)
+		g.highestUnlockedLevel = max(g.highestUnlockedLevel, next)
+	}
 	g.currentScreen = ScreenWorldMap
 }
 
@@ -296,7 +310,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	switch g.currentScreen {
 	case ScreenWorldMap:
-		g.worldMap.Draw(screen)
+		g.worldMap.Draw(screen, g.highestUnlockedLevel)
 	case ScreenPlaying:
 		g.drawPlaying(screen)
 	case ScreenGameOver:
@@ -326,14 +340,14 @@ func (g *Game) drawPlaying(screen *ebiten.Image) {
 	g.background.Draw(screen, 3)
 
 	if g.fadeAlpha > 0 {
-		vector.FillRect(screen, 0, 0, 640, 360, color.RGBA{0, 0, 0, uint8(g.fadeAlpha * 255)}, false)
+		vector.FillRect(screen, 0, 0, float32(ScreenWidth), float32(ScreenHeight), color.RGBA{0, 0, 0, uint8(g.fadeAlpha * 255)}, false)
 	}
 
 	g.hud.Draw(screen, g.player.health, g.player.maxHealth, g.player.coins)
 }
 
 func (g *Game) Layout(w, h int) (int, int) {
-	return 640, 360
+	return ScreenWidth, ScreenHeight
 }
 
 func loadImage(path string) *ebiten.Image {
@@ -350,23 +364,22 @@ func main() {
 	font := NewBitmapFont(assets.FontImg, 18, 18)
 
 	game := &Game{
-		currentScreen: ScreenWorldMap,
-		worldMap:      NewWorldMap(assets),
-		player:        NewPlayer(assets.PlayerImg),
-		hud:           NewHUD(assets.HudBg, assets.HeartImg, font),
-		bulletImg:     assets.BulletImg,
-		enemyImage:    assets.EnemyImages,
-		spawnTimers:   make(map[EnemyType]int),
-		spawnCounts:   make(map[EnemyType]int),
-		coinImg:       assets.CoinImg,
+		currentScreen:        ScreenWorldMap,
+		highestUnlockedLevel: 1,
+		worldMap:             NewWorldMap(assets),
+		player:               NewPlayer(assets.PlayerImg),
+		hud:                  NewHUD(assets.HudBg, assets.HeartImg, font),
+		bulletImg:            assets.BulletImg,
+		enemyImage:           assets.EnemyImages,
+		spawnTimers:          make(map[EnemyType]int),
+		spawnCounts:          make(map[EnemyType]int),
+		coinImg:              assets.CoinImg,
 	}
 
-	ebiten.SetWindowSize(640, 360)
+	ebiten.SetWindowSize(ScreenWidth, ScreenHeight)
 	ebiten.SetWindowTitle("Skyburrower")
 
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
-
-	ebiten.SetCursorMode(ebiten.CursorModeHidden)
 
 	if err := ebiten.RunGame(game); err != nil {
 		log.Fatal(err)

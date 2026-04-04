@@ -62,18 +62,16 @@ func (p *Player) Update(g *Game) {
 	p.x += (targetX - p.x) * lerpFactor
 	p.y += (targetY - p.y) * lerpFactor
 
-	const screenW = 640
-	const screenH = 360
 	if p.x < 0 {
 		p.x = 0
-	} else if p.x > screenW-float64(p.frameWidth) {
-		p.x = screenW - float64(p.frameWidth)
+	} else if p.x > float64(ScreenWidth)-float64(p.frameWidth) {
+		p.x = float64(ScreenWidth) - float64(p.frameWidth)
 	}
 
 	if p.y < 0 {
 		p.y = 0
-	} else if p.y > screenH-float64(p.frameHeight) {
-		p.y = screenH - float64(p.frameHeight)
+	} else if p.y > float64(ScreenHeight)-float64(p.frameHeight) {
+		p.y = float64(ScreenHeight) - float64(p.frameHeight)
 	}
 
 	p.fireCounter++
