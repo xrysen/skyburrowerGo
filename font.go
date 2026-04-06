@@ -21,10 +21,12 @@ func NewBitmapFont(img *ebiten.Image, charWidth, charHeight int) *BitmapFont {
 	}
 }
 
-func (f *BitmapFont) DrawText(screen *ebiten.Image, text string, x, y float64) {
+func (f *BitmapFont) DrawText(screen *ebiten.Image, text string, x, y float64, scale float64) {
 	charMap := " !\"\"$%*'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_~abcdefghijklmnopqrstuvwxyz"
 
 	charsPerRow := 20
+	baseScale := 0.5 * scale
+	charSpacing := 9 * scale
 
 	for i, char := range text {
 		charIndex := strings.IndexRune(charMap, char)
@@ -43,8 +45,8 @@ func (f *BitmapFont) DrawText(screen *ebiten.Image, text string, x, y float64) {
 		charImg := f.img.SubImage(rect).(*ebiten.Image)
 
 		op := &ebiten.DrawImageOptions{}
-		op.GeoM.Scale(0.5, 0.5)
-		op.GeoM.Translate(x+float64(i*9), y)
+		op.GeoM.Scale(baseScale, baseScale)
+		op.GeoM.Translate(x+float64(i)*charSpacing, y)
 		screen.DrawImage(charImg, op)
 	}
 }

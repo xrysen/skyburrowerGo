@@ -13,6 +13,23 @@ import (
 
 type GameState int
 
+type UpgradeType int
+
+const (
+	UpgradeHealth UpgradeType = iota
+	UpgradeBulletStrength
+	UpgradeBulletSpeed
+	UpgradeBulletCount
+	UpgradeSpeed
+	UpgradeMagnetism
+	UpgradeLuck
+	UpgradeCount // Total number of upgrades
+)
+
+type Upgrade struct {
+	Level int // 0 = empty, 1+ = filled levels
+}
+
 const (
 	StateLevel GameState = iota
 	StateLevelComplete
@@ -46,6 +63,7 @@ type Game struct {
 	carrotSpawned     [CarrotsPerLevel]bool
 	state             GameState
 	bossKilled        bool
+	upgrades          [UpgradeCount]Upgrade
 
 	fadeAlpha float64
 	fadeSpeed float64
@@ -489,7 +507,7 @@ func main() {
 	game := &Game{
 		currentScreen:        ScreenWorldMap,
 		highestUnlockedLevel: 1,
-		worldMap:             NewWorldMap(assets),
+		worldMap:             NewWorldMap(assets, font),
 		player:               NewPlayer(assets.PlayerImg),
 		hud:                  NewHUD(assets.HudBg, assets.HeartImg, assets.LsCarrotEmpty, assets.LsCarrotFull, font),
 		bulletImg:            assets.BulletImg,

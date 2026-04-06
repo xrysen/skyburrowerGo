@@ -23,6 +23,9 @@ type Assets struct {
 	LevelSelectLayer  *ebiten.Image
 	LevelSelectButton *ebiten.Image
 	LockIcon          *ebiten.Image
+	PlusSign          *ebiten.Image
+	UpgradeEmpty      *ebiten.Image
+	UpgradeFilled     *ebiten.Image
 	LevelDigits       [10]*ebiten.Image
 	LsCarrotEmpty     *ebiten.Image
 	LsCarrotFull      *ebiten.Image
@@ -51,6 +54,9 @@ func LoadAssets() *Assets {
 	a.LevelSelectLayer = loadImage("Assets/WorldMap/wm.png")
 	a.LevelSelectButton = loadImage("Assets/WorldMap/levelSelectButton.png")
 	a.LockIcon = loadImage("Assets/WorldMap/lockIcon.png")
+	a.PlusSign = loadImage("Assets/WorldMap/plusSign.png")
+	a.UpgradeEmpty = loadImage("Assets/WorldMap/upgradeEmpty.png")
+	a.UpgradeFilled = loadImage("Assets/WorldMap/upgradeFilled.png")
 	for d := 0; d < 10; d++ {
 		a.LevelDigits[d] = loadImage(fmt.Sprintf("Assets/WorldMap/%d.png", d))
 	}

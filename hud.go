@@ -58,7 +58,7 @@ func (h *HUD) Draw(screen *ebiten.Image, health, maxHealth, coins int, runCarrot
 		}
 	}
 	coinText := fmt.Sprintf("%d", coins)
-	h.font.DrawText(screen, coinText, 60, 49)
+	h.font.DrawText(screen, coinText, 60, 49, 1.0)
 }
 
 func (h *HUD) drawCarrotProgress(screen *ebiten.Image, runCarrotMask uint8) {

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
@@ -8,6 +10,16 @@ import (
 const (
 	gearsBgY      = 0
 	upgradeLayerY = 10
+
+	// Upgrade slot positions (based on UpgradeLayer.png layout)
+	upgradeSlotStartX = 140  // X position of plus signs (right of black bars)
+	upgradeSlotStartY = 23  // Y position of first upgrade slot (coin slot) - 41-10 to compensate for upgradeLayerY
+	upgradeSlotStepY  = 29  // Vertical distance between upgrade slots
+	upgradeSlotCount  = 8   // Number of upgrade slots total
+
+	// Upgrade bar positions (left of plus signs)
+	upgradeBarStartX = 80   // X position of upgrade bars
+	upgradeBarStartY = 25   // Y position of first upgrade bar
 
 	levelGridOriginX = 353 // screen: top-left of first cell (row 0, col 0)
 	levelGridOriginY = 57
@@ -32,21 +44,29 @@ type WorldMap struct {
 	levelSelectLayer  *ebiten.Image
 	levelSelectButton *ebiten.Image
 	lockIcon          *ebiten.Image
+	plusSign          *ebiten.Image
+	upgradeEmpty      *ebiten.Image
+	upgradeFilled     *ebiten.Image
 	levelDigits       [10]*ebiten.Image
 	carrotEmpty       *ebiten.Image
 	carrotFull        *ebiten.Image
+	font              *BitmapFont
 }
 
-func NewWorldMap(assets *Assets) *WorldMap {
+func NewWorldMap(assets *Assets, font *BitmapFont) *WorldMap {
 	return &WorldMap{
 		gearsBg:           assets.GearsBg,
 		upgradeLayer:      assets.UpgradeLayer,
 		levelSelectLayer:  assets.LevelSelectLayer,
 		levelSelectButton: assets.LevelSelectButton,
 		lockIcon:          assets.LockIcon,
+		plusSign:          assets.PlusSign,
+		upgradeEmpty:      assets.UpgradeEmpty,
+		upgradeFilled:     assets.UpgradeFilled,
 		levelDigits:       assets.LevelDigits,
 		carrotEmpty:       assets.LsCarrotEmpty,
 		carrotFull:        assets.LsCarrotFull,
+		font:              font,
 	}
 }
 
@@ -95,6 +115,9 @@ func (wm *WorldMap) Draw(screen *ebiten.Image, g *Game) {
 	levelSelectOp := &ebiten.DrawImageOptions{}
 	screen.DrawImage(wm.levelSelectLayer, levelSelectOp)
 	wm.drawLevelSelectButtons(screen, g)
+	wm.drawUpgradeBars(screen, g)
+	wm.drawUpgradePlusSigns(screen)
+	wm.drawCoinCount(screen, g)
 }
 
 func (wm *WorldMap) drawLevelSelectButtons(screen *ebiten.Image, g *Game) {
@@ -252,5 +275,69 @@ func (wm *WorldMap) drawLevelNumberOnButton(screen *ebiten.Image, cellX, cellY f
 		op.GeoM.Translate(x, startY)
 		screen.DrawImage(img, op)
 		x += float64(img.Bounds().Dx())
+	}
+}
+
+func (wm *WorldMap) drawCoinCount(screen *ebiten.Image, g *Game) {
+	if wm.font == nil {
+		return
+	}
+	coinText := fmt.Sprintf("%d", g.player.coins)
+	wm.font.DrawText(screen, coinText, 80, 27, 1.5)
+}
+
+// drawUpgradeBars draws upgrade bars (empty or filled) for each upgrade slot
+func (wm *WorldMap) drawUpgradeBars(screen *ebiten.Image, g *Game) {
+	for i := 0; i < upgradeSlotCount; i++ {
+		// Skip the coin slot (index 0)
+		if i == 0 {
+			continue
+		}
+
+		// Map upgrade slot to upgrade type (skip coin slot)
+		upgradeType := UpgradeType(i - 1)
+		if upgradeType >= UpgradeCount {
+			continue
+		}
+
+		// Draw 7 bars for this upgrade (left to right)
+		for bar := 0; bar < 7; bar++ {
+			x := float64(upgradeBarStartX + bar*8) // 15 pixels spacing between bars
+			y := float64(upgradeBarStartY + i*upgradeSlotStepY)
+
+			// Choose empty or filled based on upgrade level
+			var img *ebiten.Image
+			if bar < g.upgrades[upgradeType].Level {
+				img = wm.upgradeFilled
+			} else {
+				img = wm.upgradeEmpty
+			}
+
+			op := &ebiten.DrawImageOptions{}
+			op.GeoM.Translate(x, y)
+			screen.DrawImage(img, op)
+		}
+	}
+}
+
+// drawUpgradePlusSigns draws plus signs on all upgrade slots except the coin slot (index 0)
+func (wm *WorldMap) drawUpgradePlusSigns(screen *ebiten.Image) {
+	plusImg := wm.plusSign
+	if plusImg == nil {
+		return
+	}
+
+	for i := 0; i < upgradeSlotCount; i++ {
+		// Skip the coin slot (index 0)
+		if i == 0 {
+			continue
+		}
+
+		x := float64(upgradeSlotStartX)
+		y := float64(upgradeSlotStartY + i*upgradeSlotStepY)
+
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(x, y)
+		screen.DrawImage(plusImg, op)
 	}
 }
