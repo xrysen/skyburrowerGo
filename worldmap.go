@@ -153,8 +153,12 @@ func (wm *WorldMap) plusSignAtScreen(x, y int) (upgradeType UpgradeType, ok bool
 // handleUpgradeClick processes an upgrade purchase when a plus sign is clicked
 func (wm *WorldMap) handleUpgradeClick(g *Game, upgradeType UpgradeType) {
 	cost := wm.getUpgradeCost(upgradeType, g.upgrades[upgradeType].Level)
+	maxLevel := 7
+	if upgradeType == UpgradeBulletCount {
+		maxLevel = 4
+	}
 	
-	if g.player.coins >= cost && g.upgrades[upgradeType].Level < 7 {
+	if g.player.coins >= cost && g.upgrades[upgradeType].Level < maxLevel {
 		g.player.coins -= cost
 		g.upgrades[upgradeType].Level++
 		wm.applyUpgradeEffects(g, upgradeType)
@@ -168,13 +172,18 @@ func (wm *WorldMap) getUpgradeCost(upgradeType UpgradeType, currentLevel int) in
 		UpgradeHealth:        50,
 		UpgradeBulletStrength: 75,
 		UpgradeBulletSpeed:   60,
-		UpgradeBulletCount:   100,
+		UpgradeBulletCount:   400,
 		UpgradeSpeed:         80,
 		UpgradeMagnetism:     90,
 		UpgradeLuck:          65,
 	}
 	
-	if currentLevel >= 7 {
+	maxLevel := 7
+	if upgradeType == UpgradeBulletCount {
+		maxLevel = 4
+	}
+	
+	if currentLevel >= maxLevel {
 		return 999999 // Max level reached
 	}
 	
@@ -406,9 +415,15 @@ func (wm *WorldMap) drawUpgradeBars(screen *ebiten.Image, g *Game) {
 			continue
 		}
 
-		// Draw 7 bars for this upgrade (left to right)
-		for bar := 0; bar < 7; bar++ {
-			x := float64(upgradeBarStartX + bar*8) // 15 pixels spacing between bars
+		// Determine max bars for this upgrade type
+		maxBars := 7
+		if upgradeType == UpgradeBulletCount {
+			maxBars = 4
+		}
+
+		// Draw bars for this upgrade (left to right)
+		for bar := 0; bar < maxBars; bar++ {
+			x := float64(upgradeBarStartX + bar*8) // 8 pixels spacing between bars
 			y := float64(upgradeBarStartY + i*upgradeSlotStepY)
 
 			// Choose empty or filled based on upgrade level
@@ -544,9 +559,13 @@ func (wm *WorldMap) drawUpgradeHoverText(screen *ebiten.Image, g *Game) {
 				text.Draw(screen, line, wm.tooltipFont, int(tooltipX+float64(padding)), int(tooltipY+float64(padding+lineHeight-5+(i+1)*lineHeight)), textColor)
 			}
 			
-			// Draw cost or MAX level
+				// Draw cost or MAX level
 			costY := tooltipY + float64(padding+lineHeight-5+(len(descLines)+1)*lineHeight)
-			if currentLevel >= 7 {
+			maxLevel := 7
+			if upgradeType == UpgradeBulletCount {
+				maxLevel = 4
+			}
+			if currentLevel >= maxLevel {
 				text.Draw(screen, "MAX LEVEL", wm.tooltipFont, int(tooltipX+float64(padding)), int(costY), textColor)
 			} else {
 				cost := wm.getUpgradeCost(upgradeType, currentLevel)
@@ -568,7 +587,11 @@ func (wm *WorldMap) drawUpgradeHoverText(screen *ebiten.Image, g *Game) {
 			
 			// Draw cost or MAX level (medium font with shadow)
 			costY := tooltipY + float64(padding+lineHeight+len(descLines)*lineHeight)
-			if currentLevel >= 7 {
+			maxLevel := 7
+			if upgradeType == UpgradeBulletCount {
+				maxLevel = 4
+			}
+			if currentLevel >= maxLevel {
 				wm.font.DrawTextWithShadow(screen, "MAX LEVEL", tooltipX+float64(padding), costY, 1.0)
 			} else {
 				cost := wm.getUpgradeCost(upgradeType, currentLevel)

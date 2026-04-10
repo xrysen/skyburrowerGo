@@ -96,8 +96,34 @@ func (p *Player) Update(g *Game) {
 		bx := p.x + float64(p.frameWidth)/2
 		by := p.y + float64(p.frameHeight)/2 - 4
 
-		newBullet := NewBullet(bx, by, g.bulletImg, p.bulletDamage)
-		g.bullets = append(g.bullets, newBullet)
+		// Get bullet count from upgrade level (1 base + upgrade level)
+		bulletCount := 1 + g.upgrades[UpgradeBulletCount].Level
+		
+		if bulletCount == 1 {
+			// Single bullet (no upgrade)
+			newBullet := NewBullet(bx, by, g.bulletImg, p.bulletDamage)
+			g.bullets = append(g.bullets, newBullet)
+		} else {
+			// Spread pattern: create bullets in a fan formation
+			// Angle spread: total spread of 30 degrees, centered on forward direction
+			totalSpread := 30.0 // degrees
+			startAngle := -totalSpread / 2.0
+			angleStep := totalSpread / float64(bulletCount-1)
+			
+			for i := 0; i < bulletCount; i++ {
+				angle := startAngle + float64(i)*angleStep
+				angleRad := angle * 3.14159 / 180.0 // Convert to radians
+				
+				// Calculate velocity components for spread
+				vx := p.bulletSpeed
+				vy := p.bulletSpeed * float64(angleRad) * 0.5 // Reduce vertical spread for better gameplay
+				
+				// Create spread bullet with directional velocity
+				spreadBullet := NewSpreadBullet(bx, by, g.bulletImg, p.bulletDamage, vx, vy)
+				
+				g.bullets = append(g.bullets, spreadBullet)
+			}
+		}
 
 	}
 	p.frameCounter++

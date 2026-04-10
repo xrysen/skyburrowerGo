@@ -45,7 +45,7 @@ type Game struct {
 	worldMap          *WorldMap
 	player            *Player
 	background        *Background
-	bullets           []*Bullet
+	bullets           []Bullet
 	bulletImg         *ebiten.Image
 	enemies           []Enemy
 	enemyImage        map[EnemyType]*ebiten.Image
@@ -129,10 +129,11 @@ func (g *Game) updatePlaying() {
 	g.background.Update()
 	g.player.Update(g)
 
-	var activeBullets []*Bullet
+	var activeBullets []Bullet
 	for _, b := range g.bullets {
 		b.Update()
-		if b.x < ScreenWidth {
+		x, _ := b.GetPosition()
+		if x < ScreenWidth {
 			activeBullets = append(activeBullets, b)
 		}
 	}
@@ -273,13 +274,21 @@ func (g *Game) updatePlaying() {
 		}
 
 		for _, b := range g.bullets {
+			bx, by := b.GetPosition()
 			for _, e := range g.enemies {
 				ex, ey := e.GetPosition()
 				ew, eh := e.GetBounds()
-				if checkCollision(b.x, b.y, 8, 8, ex, ey, ew, eh) {
-					e.TakeDamage(b.damage)
-					b.x = 1000
-					b.y = 1000
+				if checkCollision(bx, by, 8, 8, ex, ey, ew, eh) {
+					e.TakeDamage(b.GetDamage())
+					// Move bullet off screen instead of modifying x,y directly
+					// This works because bullets are filtered out in the next frame
+					if sb, ok := b.(*SpreadBullet); ok {
+						sb.x = 1000
+						sb.y = 1000
+					} else if bi, ok := b.(*BulletImpl); ok {
+						bi.x = 1000
+						bi.y = 1000
+					}
 					if e.IsDead() {
 						e.OnDeath(g)
 					}
@@ -361,7 +370,7 @@ func (g *Game) transitionToWorldMapFromGameOver() {
 
 	// Clear all active game objects
 	g.enemies = []Enemy{}
-	g.bullets = []*Bullet{}
+	g.bullets = []Bullet{}
 	g.coins = []*Coin{}
 	g.levelCarrots = []*LevelCarrot{}
 
@@ -392,6 +401,7 @@ func (g *Game) loadLevel(level *LevelConfig) {
 	g.runLevelCarrotMask = 0
 	g.levelTimer = 0
 	g.enemies = []Enemy{}
+	g.bullets = []Bullet{}
 	g.spawnTimers = make(map[EnemyType]int)
 	g.spawnCounts = make(map[EnemyType]int)
 	g.bossKilled = false
