@@ -2,6 +2,7 @@ package main
 
 import (
 	"image"
+	"math"
 	"math/rand/v2"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -45,9 +46,29 @@ func NewCoin(x, y float64, size CoinSize, img *ebiten.Image) *Coin {
 	}
 }
 
-func (c *Coin) Update() {
+func (c *Coin) Update(g *Game) {
 	c.frameCounter++
-	c.x -= 1.5
+	
+	// Check magnetic attraction
+	player := g.player
+	dx := player.x - c.x
+	dy := player.y - c.y
+	distance := (dx*dx + dy*dy) // Squared distance for performance
+	
+	// If within magnet range, attract coin to player
+	if distance < player.magnetRange*player.magnetRange {
+		// Calculate attraction force (stronger when closer)
+		attractionSpeed := 3.0 + (player.magnetRange - math.Sqrt(distance)) * 0.1
+		
+		// Normalize direction and apply attraction
+		if distance > 0 {
+			c.x += (dx / math.Sqrt(distance)) * attractionSpeed
+			c.y += (dy / math.Sqrt(distance)) * attractionSpeed
+		}
+	} else {
+		// Normal movement when not in range
+		c.x -= 1.5
+	}
 }
 
 func (c *Coin) Draw(screen *ebiten.Image) {

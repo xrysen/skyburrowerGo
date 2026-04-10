@@ -76,9 +76,12 @@ func (f *Flutternat) GetBounds() (width, height float64) {
 }
 
 func (f *Flutternat) TakeDamage(amount int) {
+	// Only show health bar if enemy won't die in one hit
+	if amount < f.health {
+		f.healthBarTimer = 30
+	}
 	f.health -= amount
 	f.hitFlashTimer = 10
-	f.healthBarTimer = 30
 }
 
 func (f *Flutternat) IsDead() bool {

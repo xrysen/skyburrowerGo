@@ -22,6 +22,12 @@ type Player struct {
 	invincibleTimer int
 	luck            int
 	coins           int
+
+	// Upgrade stats
+	bulletDamage int
+	bulletSpeed  float64
+	bulletCount  int
+	magnetRange  float64
 }
 
 func NewPlayer(img *ebiten.Image) *Player {
@@ -37,15 +43,23 @@ func NewPlayer(img *ebiten.Image) *Player {
 		health:       3,
 		maxHealth:    3,
 		luck:         1,
-		coins:        0,
+		coins:        1000 ,
+		
+		// Default upgrade stats
+		bulletDamage: 1,
+		bulletSpeed:  7.0,
+		bulletCount:  1,
+		magnetRange:  50.0,
 	}
 }
 
-func (p *Player) getMovementSpeed() float64 {
+func (p *Player) getMovementSpeed(g *Game) float64 {
 	const slow = 0.03
 	const fast = 1.0
 
-	return slow + (fast-slow)*(float64(p.speedLevel-1)/6.0)
+	// Use base speed level + upgrade speed level
+	totalSpeedLevel := p.speedLevel + g.upgrades[UpgradeSpeed].Level
+	return slow + (fast-slow)*(float64(totalSpeedLevel-1)/12.0)
 }
 
 func (p *Player) Update(g *Game) {
@@ -54,7 +68,7 @@ func (p *Player) Update(g *Game) {
 	targetX := float64(mx) - (float64(p.frameWidth) / 2)
 	targetY := float64(my) - (float64(p.frameHeight) / 2)
 
-	lerpFactor := p.getMovementSpeed()
+	lerpFactor := p.getMovementSpeed(g)
 	if lerpFactor > 1 {
 		lerpFactor = 1
 	}
@@ -82,7 +96,7 @@ func (p *Player) Update(g *Game) {
 		bx := p.x + float64(p.frameWidth)/2
 		by := p.y + float64(p.frameHeight)/2 - 4
 
-		newBullet := NewBullet(bx, by, g.bulletImg)
+		newBullet := NewBullet(bx, by, g.bulletImg, p.bulletDamage)
 		g.bullets = append(g.bullets, newBullet)
 
 	}

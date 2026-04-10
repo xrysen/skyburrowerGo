@@ -3,17 +3,19 @@ package main
 import "github.com/hajimehoshi/ebiten/v2"
 
 type Bullet struct {
-	x, y  float64
-	img   *ebiten.Image
-	speed float64
+	x, y   float64
+	img    *ebiten.Image
+	speed  float64
+	damage int
 }
 
-func NewBullet(x, y float64, img *ebiten.Image) *Bullet {
+func NewBullet(x, y float64, img *ebiten.Image, damage int) *Bullet {
 	return &Bullet{
 		x:     x,
 		y:     y,
 		img:   img,
 		speed: 7.0,
+		damage: damage,
 	}
 }
 

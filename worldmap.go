@@ -2,9 +2,14 @@ package main
 
 import (
 	"fmt"
+	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
+	"github.com/hajimehoshi/ebiten/v2/text"
+	"github.com/hajimehoshi/ebiten/v2/vector"
+	"golang.org/x/image/font"
+	"golang.org/x/image/font/basicfont"
 )
 
 const (
@@ -51,9 +56,16 @@ type WorldMap struct {
 	carrotEmpty       *ebiten.Image
 	carrotFull        *ebiten.Image
 	font              *BitmapFont
+	tooltipFont       font.Face
 }
 
 func NewWorldMap(assets *Assets, font *BitmapFont) *WorldMap {
+	tooltipFont, err := loadSystemFont()
+	if err != nil {
+		// Fallback to bitmap font if system font fails
+		tooltipFont = nil
+	}
+	
 	return &WorldMap{
 		gearsBg:           assets.GearsBg,
 		upgradeLayer:      assets.UpgradeLayer,
@@ -67,6 +79,7 @@ func NewWorldMap(assets *Assets, font *BitmapFont) *WorldMap {
 		carrotEmpty:       assets.LsCarrotEmpty,
 		carrotFull:        assets.LsCarrotFull,
 		font:              font,
+		tooltipFont:       tooltipFont,
 	}
 }
 
@@ -85,6 +98,8 @@ func (wm *WorldMap) Update(g *Game) {
 					g.startLevel(cfg)
 				}
 			}
+		} else if upgradeType, ok := wm.plusSignAtScreen(mx, my); ok {
+			wm.handleUpgradeClick(g, upgradeType)
 		}
 	}
 }
@@ -105,6 +120,96 @@ func (wm *WorldMap) levelSlotAtScreen(x, y int) (level int, ok bool) {
 	return 0, false
 }
 
+// plusSignAtScreen returns the upgrade type if (x, y) is inside a plus sign button.
+func (wm *WorldMap) plusSignAtScreen(x, y int) (upgradeType UpgradeType, ok bool) {
+	if wm.plusSign == nil {
+		return 0, false
+	}
+	
+	pw := wm.plusSign.Bounds().Dx()
+	ph := wm.plusSign.Bounds().Dy()
+	
+	for i := 0; i < upgradeSlotCount; i++ {
+		// Skip the coin slot (index 0)
+		if i == 0 {
+			continue
+		}
+		
+		px := upgradeSlotStartX
+		py := upgradeSlotStartY + i*upgradeSlotStepY
+		
+		if x >= px && y >= py && x < px+pw && y < py+ph {
+			// Map upgrade slot to upgrade type (skip coin slot)
+			upgradeType := UpgradeType(i - 1)
+			if upgradeType >= UpgradeCount {
+				return 0, false
+			}
+			return upgradeType, true
+		}
+	}
+	return 0, false
+}
+
+// handleUpgradeClick processes an upgrade purchase when a plus sign is clicked
+func (wm *WorldMap) handleUpgradeClick(g *Game, upgradeType UpgradeType) {
+	cost := wm.getUpgradeCost(upgradeType, g.upgrades[upgradeType].Level)
+	
+	if g.player.coins >= cost && g.upgrades[upgradeType].Level < 7 {
+		g.player.coins -= cost
+		g.upgrades[upgradeType].Level++
+		wm.applyUpgradeEffects(g, upgradeType)
+	}
+}
+
+// getUpgradeCost returns the cost for upgrading a specific type to the next level
+func (wm *WorldMap) getUpgradeCost(upgradeType UpgradeType, currentLevel int) int {
+	// Base cost for first level of each upgrade type
+	baseCosts := map[UpgradeType]int{
+		UpgradeHealth:        50,
+		UpgradeBulletStrength: 75,
+		UpgradeBulletSpeed:   60,
+		UpgradeBulletCount:   100,
+		UpgradeSpeed:         80,
+		UpgradeMagnetism:     90,
+		UpgradeLuck:          65,
+	}
+	
+	if currentLevel >= 7 {
+		return 999999 // Max level reached
+	}
+	
+	baseCost := baseCosts[upgradeType]
+	// Cost increases exponentially: baseCost * (level + 1)
+	return baseCost * (currentLevel + 1)
+}
+
+// applyUpgradeEffects applies the effects of an upgrade to the player
+func (wm *WorldMap) applyUpgradeEffects(g *Game, upgradeType UpgradeType) {
+	switch upgradeType {
+	case UpgradeHealth:
+		// Each level adds 1 max health
+		g.player.maxHealth = 3 + g.upgrades[upgradeType].Level
+		g.player.health = g.player.maxHealth // Heal to full max health
+	case UpgradeBulletStrength:
+		// Each level increases bullet damage by 1
+		g.player.bulletDamage = 1 + g.upgrades[upgradeType].Level
+	case UpgradeBulletSpeed:
+		// Each level reduces fire interval for faster shooting
+		g.player.fireInterval = 30 - g.upgrades[upgradeType].Level*3
+	case UpgradeBulletCount:
+		// Each level adds 1 more bullet (max 3 additional)
+		g.player.bulletCount = 1 + g.upgrades[upgradeType].Level
+	case UpgradeSpeed:
+		// Speed levels are handled in player.getMovementSpeed()
+	case UpgradeMagnetism:
+		// Each level increases magnet range by 20 pixels
+		g.player.magnetRange = 50.0 + float64(g.upgrades[upgradeType].Level)*20.0
+	case UpgradeLuck:
+		// Luck affects coin spawn rate and big coin chance
+		g.player.luck = 1 + g.upgrades[upgradeType].Level
+	}
+}
+
 func (wm *WorldMap) Draw(screen *ebiten.Image, g *Game) {
 	gearsOp := &ebiten.DrawImageOptions{}
 	gearsOp.GeoM.Translate(0, float64(gearsBgY))
@@ -117,6 +222,7 @@ func (wm *WorldMap) Draw(screen *ebiten.Image, g *Game) {
 	wm.drawLevelSelectButtons(screen, g)
 	wm.drawUpgradeBars(screen, g)
 	wm.drawUpgradePlusSigns(screen)
+	wm.drawUpgradeHoverText(screen, g)
 	wm.drawCoinCount(screen, g)
 }
 
@@ -339,5 +445,136 @@ func (wm *WorldMap) drawUpgradePlusSigns(screen *ebiten.Image) {
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(x, y)
 		screen.DrawImage(plusImg, op)
+	}
+}
+
+// getUpgradeInfo returns the name and description for an upgrade type
+func (wm *WorldMap) getUpgradeInfo(upgradeType UpgradeType) (string, string) {
+	switch upgradeType {
+	case UpgradeHealth:
+		return "HEALTH", "Increases max health by 1"
+	case UpgradeBulletStrength:
+		return "DAMAGE", "Increases bullet damage"
+	case UpgradeBulletSpeed:
+		return "BULLET SPEED", "Makes bullets fly faster"
+	case UpgradeBulletCount:
+		return "MULTISHOT", "Fire more bullets at once"
+	case UpgradeSpeed:
+		return "MOVEMENT", "Increases player speed"
+	case UpgradeMagnetism:
+		return "MAGNET", "Attracts coins from farther"
+	case UpgradeLuck:
+		return "LUCK", "Better coin spawn rates"
+	default:
+		return "UNKNOWN", "No description available"
+	}
+}
+
+// wrapText wraps text to specified line length
+func (wm *WorldMap) wrapText(text string, maxLen int) []string {
+	if len(text) <= maxLen {
+		return []string{text}
+	}
+	
+	var lines []string
+	for len(text) > maxLen {
+		// Find the last space before maxLen
+		splitPos := maxLen
+		for i := maxLen - 1; i >= 0; i-- {
+			if text[i] == ' ' {
+				splitPos = i
+				break
+			}
+		}
+		
+		lines = append(lines, text[:splitPos])
+		text = text[splitPos+1:] // Skip the space
+	}
+	
+	if len(text) > 0 {
+		lines = append(lines, text)
+	}
+	
+	return lines
+}
+
+// loadSystemFont loads a retro-style system font for tooltips
+func loadSystemFont() (font.Face, error) {
+	// Use basicfont which provides a clean, readable monospace font
+	face := basicfont.Face7x13
+	return face, nil
+}
+
+// drawUpgradeHoverText shows upgrade tooltip when hovering over plus signs
+func (wm *WorldMap) drawUpgradeHoverText(screen *ebiten.Image, g *Game) {
+	mx, my := ebiten.CursorPosition()
+	if upgradeType, ok := wm.plusSignAtScreen(mx, my); ok {
+		currentLevel := g.upgrades[upgradeType].Level
+		
+		// Get upgrade info
+		name, description := wm.getUpgradeInfo(upgradeType)
+		
+		// Position tooltip above the plus sign
+		tooltipX := float64(upgradeSlotStartX) + 40
+		tooltipY := float64(upgradeSlotStartY + (int(upgradeType)+1)*upgradeSlotStepY)
+		
+		// Calculate tooltip dimensions
+		padding := 6
+		lineHeight := 14
+		descLines := wm.wrapText(description, 20) // Wrap to 30 chars per line
+		
+		// Calculate background size
+		bgWidth := 180
+		bgHeight := padding*2 + lineHeight + len(descLines)*lineHeight + lineHeight // name + desc lines + cost
+		
+		// Draw semi-transparent black background
+		bgColor := color.RGBA{0, 0, 0, 200} // Semi-transparent black
+		vector.FillRect(screen, float32(tooltipX-3), float32(tooltipY-3), float32(bgWidth), float32(bgHeight), bgColor, false)
+		
+		// Use system font if available, otherwise fallback to bitmap font
+		if wm.tooltipFont != nil {
+			// Draw with system font
+			textColor := color.RGBA{255, 255, 255, 255}
+			
+			// Draw upgrade name
+			text.Draw(screen, name, wm.tooltipFont, int(tooltipX+float64(padding)), int(tooltipY+float64(padding+lineHeight-5)), textColor)
+			
+			// Draw description
+			for i, line := range descLines {
+				text.Draw(screen, line, wm.tooltipFont, int(tooltipX+float64(padding)), int(tooltipY+float64(padding+lineHeight-5+(i+1)*lineHeight)), textColor)
+			}
+			
+			// Draw cost or MAX level
+			costY := tooltipY + float64(padding+lineHeight-5+(len(descLines)+1)*lineHeight)
+			if currentLevel >= 7 {
+				text.Draw(screen, "MAX LEVEL", wm.tooltipFont, int(tooltipX+float64(padding)), int(costY), textColor)
+			} else {
+				cost := wm.getUpgradeCost(upgradeType, currentLevel)
+				costText := fmt.Sprintf("Cost: %d coins", cost)
+				text.Draw(screen, costText, wm.tooltipFont, int(tooltipX+float64(padding)), int(costY), textColor)
+			}
+		} else {
+			// Fallback to bitmap font
+			if wm.font == nil {
+				return
+			}
+			// Draw upgrade name (larger font with shadow)
+			wm.font.DrawTextWithShadow(screen, name, tooltipX+float64(padding), tooltipY+float64(padding), 1.2)
+			
+			// Draw description (medium font with shadow)
+			for i, line := range descLines {
+				wm.font.DrawTextWithShadow(screen, line, tooltipX+float64(padding), tooltipY+float64(padding+lineHeight+i*lineHeight), 1.0)
+			}
+			
+			// Draw cost or MAX level (medium font with shadow)
+			costY := tooltipY + float64(padding+lineHeight+len(descLines)*lineHeight)
+			if currentLevel >= 7 {
+				wm.font.DrawTextWithShadow(screen, "MAX LEVEL", tooltipX+float64(padding), costY, 1.0)
+			} else {
+				cost := wm.getUpgradeCost(upgradeType, currentLevel)
+				costText := fmt.Sprintf("Cost: %d coins", cost)
+				wm.font.DrawTextWithShadow(screen, costText, tooltipX+float64(padding), costY, 1.0)
+			}
+		}
 	}
 }

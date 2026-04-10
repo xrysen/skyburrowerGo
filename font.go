@@ -25,8 +25,8 @@ func (f *BitmapFont) DrawText(screen *ebiten.Image, text string, x, y float64, s
 	charMap := " !\"\"$%*'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_~abcdefghijklmnopqrstuvwxyz"
 
 	charsPerRow := 20
-	baseScale := 0.5 * scale
-	charSpacing := 9 * scale
+	baseScale := 0.6 * scale // Increased from 0.5 for better readability
+	charSpacing := 10 * scale // Increased from 9 for better spacing
 
 	for i, char := range text {
 		charIndex := strings.IndexRune(charMap, char)
@@ -49,4 +49,12 @@ func (f *BitmapFont) DrawText(screen *ebiten.Image, text string, x, y float64, s
 		op.GeoM.Translate(x+float64(i)*charSpacing, y)
 		screen.DrawImage(charImg, op)
 	}
+}
+
+// DrawTextWithShadow draws text with a shadow for better contrast
+func (f *BitmapFont) DrawTextWithShadow(screen *ebiten.Image, text string, x, y float64, scale float64) {
+	// Draw shadow first (offset by 1 pixel)
+	f.DrawText(screen, text, x+1, y+1, scale)
+	// Draw main text on top
+	f.DrawText(screen, text, x, y, scale)
 }

@@ -214,7 +214,7 @@ func (g *Game) updatePlaying() {
 
 		var activeCoins []*Coin
 		for _, c := range g.coins {
-			c.Update()
+			c.Update(g)
 			if !c.collected && c.x > -50 {
 				activeCoins = append(activeCoins, c)
 			}
@@ -277,7 +277,7 @@ func (g *Game) updatePlaying() {
 				ex, ey := e.GetPosition()
 				ew, eh := e.GetBounds()
 				if checkCollision(b.x, b.y, 8, 8, ex, ey, ew, eh) {
-					e.TakeDamage(1)
+					e.TakeDamage(b.damage)
 					b.x = 1000
 					b.y = 1000
 					if e.IsDead() {
@@ -516,6 +516,11 @@ func main() {
 		spawnCounts:          make(map[EnemyType]int),
 		coinImg:              assets.CoinImg,
 		carrotImg:            assets.CarrotImg,
+	}
+	
+	// Initialize all upgrades to level 0
+	for i := UpgradeType(0); i < UpgradeCount; i++ {
+		game.upgrades[i] = Upgrade{Level: 0}
 	}
 
 	ebiten.SetWindowSize(ScreenWidth, ScreenHeight)
