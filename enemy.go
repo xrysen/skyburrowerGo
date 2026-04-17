@@ -17,10 +17,11 @@ type Enemy interface {
 type EnemyType string
 
 const (
-	FlutternatType EnemyType = "flutternat"
+	FlutternatType    EnemyType = "flutternat"
+	ThistleTurretType EnemyType = "thistleturret"
 )
 
-func CreateEnemy(enemyType EnemyType, x, y float64, image map[EnemyType]*ebiten.Image) Enemy {
+func CreateEnemy(enemyType EnemyType, x, y float64, image map[EnemyType]*ebiten.Image, podImg *ebiten.Image) Enemy {
 	switch enemyType {
 	case FlutternatType:
 		return &Flutternat{
@@ -33,6 +34,8 @@ func CreateEnemy(enemyType EnemyType, x, y float64, image map[EnemyType]*ebiten.
 			frameWidth:  59,
 			frameHeight: 32,
 		}
+	case ThistleTurretType:
+		return NewThistleTurret(x, y, image[ThistleTurretType], podImg)
 	}
 	return nil
 }

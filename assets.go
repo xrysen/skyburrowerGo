@@ -11,6 +11,7 @@ type Assets struct {
 	BulletImg *ebiten.Image
 
 	EnemyImages map[EnemyType]*ebiten.Image
+	PodImg      *ebiten.Image
 
 	HeartImg  *ebiten.Image
 	HudBg     *ebiten.Image
@@ -40,8 +41,11 @@ func LoadAssets() *Assets {
 	a.BulletImg = loadImage("Assets/Bullets/seedShot.png")
 
 	a.EnemyImages = map[EnemyType]*ebiten.Image{
-		FlutternatType: loadImage("Assets/Enemies/Flutternat/flutterNat.png"),
+		FlutternatType:    loadImage("Assets/Enemies/Flutternat/flutterNat.png"),
+		ThistleTurretType: loadImage("Assets/Enemies/Thistle Turret/thistle-sheet.png"),
 	}
+
+	a.PodImg = loadImage("Assets/Enemies/Thistle Turret/pod.png")
 
 	a.HeartImg = loadImage("Assets/UI/heart.png")
 	a.HudBg = loadImage("Assets/UI/ui.png")

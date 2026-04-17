@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image/color"
 	"log"
+	"math"
 	"math/rand/v2"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -47,8 +48,10 @@ type Game struct {
 	background        *Background
 	bullets           []Bullet
 	bulletImg         *ebiten.Image
+	enemyBullets      []Bullet
 	enemies           []Enemy
 	enemyImage        map[EnemyType]*ebiten.Image
+	podImg            *ebiten.Image
 	spawnTimers       map[EnemyType]int
 	spawnCounts       map[EnemyType]int
 	currentLevel      *LevelConfig
@@ -73,7 +76,7 @@ type Game struct {
 	// Levels 1..highestUnlockedLevel are playable on the world map (start: only 1).
 	highestUnlockedLevel int
 
-	// Per world level (index 0 = level 1): bits 0–4 = which of the 5 bonus carrots
+	// Per world level (index 0 = level 1): bits 0-4 = which of the 5 bonus carrots
 	// have ever been collected (merged across replays). See CarrotsPerLevel.
 	levelCarrotMask [WorldLevelCount]uint8
 	// Bits collected during the current run; merged into levelCarrotMask when the
@@ -138,6 +141,16 @@ func (g *Game) updatePlaying() {
 		}
 	}
 	g.bullets = activeBullets
+
+	var activeEnemyBullets []Bullet
+	for _, b := range g.enemyBullets {
+		b.Update()
+		x, y := b.GetPosition()
+		if x > -50 && x < ScreenWidth+50 && y > -50 && y < ScreenHeight+50 {
+			activeEnemyBullets = append(activeEnemyBullets, b)
+		}
+	}
+	g.enemyBullets = activeEnemyBullets
 
 	var activeEnemies []Enemy
 	for _, e := range g.enemies {
@@ -313,6 +326,48 @@ func (g *Game) updatePlaying() {
 				}
 			}
 		}
+
+		// Enemy bullet collision with player
+		for _, b := range g.enemyBullets {
+			bx, by := b.GetPosition()
+
+			hitboxWidth := float64(g.player.frameWidth) * 0.7
+			hitboxHeight := float64(g.player.frameHeight) * 0.7
+			offsetX := float64(g.player.frameWidth) * 0.15
+			offsetY := float64(g.player.frameHeight) * 0.15
+
+			if checkCollision(g.player.x+offsetX, g.player.y+offsetY, hitboxWidth, hitboxHeight, bx, by, 8, 8) {
+				g.player.TakeDamage(b.GetDamage())
+
+				// Move bullet off screen
+				if pb, ok := b.(*PodBullet); ok {
+					pb.x = 1000
+					pb.y = 1000
+				}
+
+				if g.player.IsDead() {
+					g.gameOver()
+				}
+			}
+		}
+
+		for _, e := range g.enemies {
+			ex, ey := e.GetPosition()
+			ew, eh := e.GetBounds()
+
+			hitboxWidth := float64(g.player.frameWidth) * 0.7
+			hitboxHeight := float64(g.player.frameHeight) * 0.7
+			offsetX := float64(g.player.frameWidth) * 0.15
+			offsetY := float64(g.player.frameHeight) * 0.15
+
+			if checkCollision(g.player.x+offsetX, g.player.y+offsetY, hitboxWidth, hitboxHeight, ex, ey, ew, eh) {
+				g.player.TakeDamage(1)
+
+				if g.player.IsDead() {
+					g.gameOver()
+				}
+			}
+		}
 	}
 }
 
@@ -332,12 +387,55 @@ func (g *Game) drawGameOver(screen *ebiten.Image) {
 }
 
 func (g *Game) spawnEnemy(cfg SpawnConfig) {
-	y := float64(ScreenHeight) / 2
-	if cfg.RandomY {
-		y = rand.Float64() * ScreenHeight
+	var y float64
+	var x float64
+
+	if cfg.EnemyType == ThistleTurretType {
+		// Check if there's already a Thistle Turret active
+		thistleCount := 0
+		for _, e := range g.enemies {
+			if _, ok := e.(*ThistleTurret); ok {
+				thistleCount++
+			}
+		}
+
+		// Don't spawn if there's already a Thistle Turret
+		if thistleCount >= 1 {
+			return
+		}
+
+		// Find a valid spawn position that doesn't overlap with existing Thistles
+		// and ensures player can get to the left of it (spawn between 200-500px)
+		maxAttempts := 10
+		for attempt := 0; attempt < maxAttempts; attempt++ {
+			x = 200 + rand.Float64()*300 // Spawn between X=200 and X=500
+			y = float64(ScreenHeight) + 50
+
+			// Check for overlap with existing enemies
+			validPosition := true
+			for _, e := range g.enemies {
+				ex, ey := e.GetPosition()
+				// Check if new position would overlap (100px minimum distance)
+				if math.Abs(x-ex) < 100 && math.Abs(y-ey) < 100 {
+					validPosition = false
+					break
+				}
+			}
+
+			if validPosition {
+				break // Found valid position
+			}
+		}
+	} else {
+		// Other enemies spawn as before
+		y = float64(ScreenHeight) / 2
+		if cfg.RandomY {
+			y = rand.Float64() * ScreenHeight
+		}
+		x = 650 + rand.Float64()*100
 	}
 
-	enemy := CreateEnemy(cfg.EnemyType, 650+rand.Float64()*100, y, g.enemyImage)
+	enemy := CreateEnemy(cfg.EnemyType, x, y, g.enemyImage, g.podImg)
 	g.enemies = append(g.enemies, enemy)
 	g.spawnCounts[cfg.EnemyType]++
 }
@@ -371,6 +469,7 @@ func (g *Game) transitionToWorldMapFromGameOver() {
 	// Clear all active game objects
 	g.enemies = []Enemy{}
 	g.bullets = []Bullet{}
+	g.enemyBullets = []Bullet{}
 	g.coins = []*Coin{}
 	g.levelCarrots = []*LevelCarrot{}
 
@@ -402,6 +501,7 @@ func (g *Game) loadLevel(level *LevelConfig) {
 	g.levelTimer = 0
 	g.enemies = []Enemy{}
 	g.bullets = []Bullet{}
+	g.enemyBullets = []Bullet{}
 	g.spawnTimers = make(map[EnemyType]int)
 	g.spawnCounts = make(map[EnemyType]int)
 	g.bossKilled = false
@@ -466,7 +566,8 @@ func (g *Game) Draw(screen *ebiten.Image) {
 }
 
 func (g *Game) drawPlaying(screen *ebiten.Image) {
-	for i := 0; i < 3; i++ {
+	// Draw all background layers first
+	for i := 0; i < 4; i++ {
 		g.background.Draw(screen, i)
 	}
 
@@ -482,13 +583,15 @@ func (g *Game) drawPlaying(screen *ebiten.Image) {
 		b.Draw(screen)
 	}
 
+	for _, b := range g.enemyBullets {
+		b.Draw(screen)
+	}
+
 	for _, e := range g.enemies {
 		e.Draw(screen)
 	}
 
 	g.player.Draw(screen)
-
-	g.background.Draw(screen, 3)
 
 	if g.fadeAlpha > 0 {
 		vector.FillRect(screen, 0, 0, float32(ScreenWidth), float32(ScreenHeight), color.RGBA{0, 0, 0, uint8(g.fadeAlpha * 255)}, false)
@@ -522,12 +625,13 @@ func main() {
 		hud:                  NewHUD(assets.HudBg, assets.HeartImg, assets.LsCarrotEmpty, assets.LsCarrotFull, font),
 		bulletImg:            assets.BulletImg,
 		enemyImage:           assets.EnemyImages,
+		podImg:               assets.PodImg,
 		spawnTimers:          make(map[EnemyType]int),
 		spawnCounts:          make(map[EnemyType]int),
 		coinImg:              assets.CoinImg,
 		carrotImg:            assets.CarrotImg,
 	}
-	
+
 	// Initialize all upgrades to level 0
 	for i := UpgradeType(0); i < UpgradeCount; i++ {
 		game.upgrades[i] = Upgrade{Level: 0}

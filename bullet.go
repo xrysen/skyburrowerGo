@@ -23,9 +23,9 @@ type BulletImpl struct {
 func NewBullet(x, y float64, img *ebiten.Image, damage int) *BulletImpl {
 	return &BulletImpl{
 		BaseBullet: BaseBullet{
-			x:     x,
-			y:     y,
-			img:   img,
+			x:      x,
+			y:      y,
+			img:    img,
 			damage: damage,
 		},
 		speed: 7.0,
@@ -59,9 +59,9 @@ func NewSpreadBullet(x, y float64, img *ebiten.Image, damage int, vx, vy float64
 	return &SpreadBullet{
 		BulletImpl: BulletImpl{
 			BaseBullet: BaseBullet{
-				x:     x,
-				y:     y,
-				img:   img,
+				x:      x,
+				y:      y,
+				img:    img,
 				damage: damage,
 			},
 			speed: 7.0,
@@ -87,5 +87,42 @@ func (b *SpreadBullet) GetPosition() (float64, float64) {
 }
 
 func (b *SpreadBullet) GetDamage() int {
+	return b.damage
+}
+
+type PodBullet struct {
+	BaseBullet
+	vx, vy float64
+}
+
+func NewPodBullet(x, y float64, img *ebiten.Image, vx, vy float64) *PodBullet {
+	return &PodBullet{
+		BaseBullet: BaseBullet{
+			x:      x,
+			y:      y,
+			img:    img,
+			damage: 1,
+		},
+		vx: vx,
+		vy: vy,
+	}
+}
+
+func (b *PodBullet) Update() {
+	b.x += b.vx
+	b.y += b.vy
+}
+
+func (b *PodBullet) Draw(screen *ebiten.Image) {
+	op := &ebiten.DrawImageOptions{}
+	op.GeoM.Translate(b.x, b.y)
+	screen.DrawImage(b.img, op)
+}
+
+func (b *PodBullet) GetPosition() (float64, float64) {
+	return b.x, b.y
+}
+
+func (b *PodBullet) GetDamage() int {
 	return b.damage
 }
