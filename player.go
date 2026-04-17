@@ -43,8 +43,8 @@ func NewPlayer(img *ebiten.Image) *Player {
 		health:       3,
 		maxHealth:    3,
 		luck:         1,
-		coins:        1000 ,
-		
+		coins:        9999,
+
 		// Default upgrade stats
 		bulletDamage: 1,
 		bulletSpeed:  7.0,
@@ -76,16 +76,19 @@ func (p *Player) Update(g *Game) {
 	p.x += (targetX - p.x) * lerpFactor
 	p.y += (targetY - p.y) * lerpFactor
 
-	if p.x < 0 {
-		p.x = 0
-	} else if p.x > float64(ScreenWidth)-float64(p.frameWidth) {
-		p.x = float64(ScreenWidth) - float64(p.frameWidth)
+	// Allow player to move partially off-screen (25% overlap)
+	offscreenAllowance := float64(p.frameWidth) * 0.25
+
+	if p.x < -offscreenAllowance {
+		p.x = -offscreenAllowance
+	} else if p.x > float64(ScreenWidth)-float64(p.frameWidth)+offscreenAllowance {
+		p.x = float64(ScreenWidth) - float64(p.frameWidth) + offscreenAllowance
 	}
 
-	if p.y < 0 {
-		p.y = 0
-	} else if p.y > float64(ScreenHeight)-float64(p.frameHeight) {
-		p.y = float64(ScreenHeight) - float64(p.frameHeight)
+	if p.y < -offscreenAllowance {
+		p.y = -offscreenAllowance
+	} else if p.y > float64(ScreenHeight)-float64(p.frameHeight)+offscreenAllowance {
+		p.y = float64(ScreenHeight) - float64(p.frameHeight) + offscreenAllowance
 	}
 
 	p.fireCounter++
@@ -98,7 +101,7 @@ func (p *Player) Update(g *Game) {
 
 		// Get bullet count from upgrade level (1 base + upgrade level)
 		bulletCount := 1 + g.upgrades[UpgradeBulletCount].Level
-		
+
 		if bulletCount == 1 {
 			// Single bullet (no upgrade)
 			newBullet := NewBullet(bx, by, g.bulletImg, p.bulletDamage)
@@ -109,18 +112,18 @@ func (p *Player) Update(g *Game) {
 			totalSpread := 30.0 // degrees
 			startAngle := -totalSpread / 2.0
 			angleStep := totalSpread / float64(bulletCount-1)
-			
+
 			for i := 0; i < bulletCount; i++ {
 				angle := startAngle + float64(i)*angleStep
 				angleRad := angle * 3.14159 / 180.0 // Convert to radians
-				
+
 				// Calculate velocity components for spread
 				vx := p.bulletSpeed
 				vy := p.bulletSpeed * float64(angleRad) * 0.5 // Reduce vertical spread for better gameplay
-				
+
 				// Create spread bullet with directional velocity
 				spreadBullet := NewSpreadBullet(bx, by, g.bulletImg, p.bulletDamage, vx, vy)
-				
+
 				g.bullets = append(g.bullets, spreadBullet)
 			}
 		}

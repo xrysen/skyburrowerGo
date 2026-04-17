@@ -17,14 +17,14 @@ const (
 	upgradeLayerY = 10
 
 	// Upgrade slot positions (based on UpgradeLayer.png layout)
-	upgradeSlotStartX = 140  // X position of plus signs (right of black bars)
+	upgradeSlotStartX = 140 // X position of plus signs (right of black bars)
 	upgradeSlotStartY = 23  // Y position of first upgrade slot (coin slot) - 41-10 to compensate for upgradeLayerY
 	upgradeSlotStepY  = 29  // Vertical distance between upgrade slots
 	upgradeSlotCount  = 8   // Number of upgrade slots total
 
 	// Upgrade bar positions (left of plus signs)
-	upgradeBarStartX = 80   // X position of upgrade bars
-	upgradeBarStartY = 25   // Y position of first upgrade bar
+	upgradeBarStartX = 80 // X position of upgrade bars
+	upgradeBarStartY = 25 // Y position of first upgrade bar
 
 	levelGridOriginX = 353 // screen: top-left of first cell (row 0, col 0)
 	levelGridOriginY = 57
@@ -65,7 +65,7 @@ func NewWorldMap(assets *Assets, font *BitmapFont) *WorldMap {
 		// Fallback to bitmap font if system font fails
 		tooltipFont = nil
 	}
-	
+
 	return &WorldMap{
 		gearsBg:           assets.GearsBg,
 		upgradeLayer:      assets.UpgradeLayer,
@@ -92,8 +92,13 @@ func (wm *WorldMap) Update(g *Game) {
 
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 		mx, my := ebiten.CursorPosition()
+
+		// Check for shift-click for testing purposes
+		isShiftPressed := ebiten.IsKeyPressed(ebiten.KeyShift) || ebiten.IsKeyPressed(ebiten.KeyShiftLeft) || ebiten.IsKeyPressed(ebiten.KeyShiftRight)
+
 		if level, ok := wm.levelSlotAtScreen(mx, my); ok {
-			if level <= g.highestUnlockedLevel {
+			// Allow shift-click to open any level for testing
+			if isShiftPressed || level <= g.highestUnlockedLevel {
 				if cfg := GetLevelForWorldSlot(level); cfg != nil {
 					g.startLevel(cfg)
 				}
@@ -125,19 +130,19 @@ func (wm *WorldMap) plusSignAtScreen(x, y int) (upgradeType UpgradeType, ok bool
 	if wm.plusSign == nil {
 		return 0, false
 	}
-	
+
 	pw := wm.plusSign.Bounds().Dx()
 	ph := wm.plusSign.Bounds().Dy()
-	
+
 	for i := 0; i < upgradeSlotCount; i++ {
 		// Skip the coin slot (index 0)
 		if i == 0 {
 			continue
 		}
-		
+
 		px := upgradeSlotStartX
 		py := upgradeSlotStartY + i*upgradeSlotStepY
-		
+
 		if x >= px && y >= py && x < px+pw && y < py+ph {
 			// Map upgrade slot to upgrade type (skip coin slot)
 			upgradeType := UpgradeType(i - 1)
@@ -157,7 +162,7 @@ func (wm *WorldMap) handleUpgradeClick(g *Game, upgradeType UpgradeType) {
 	if upgradeType == UpgradeBulletCount {
 		maxLevel = 4
 	}
-	
+
 	if g.player.coins >= cost && g.upgrades[upgradeType].Level < maxLevel {
 		g.player.coins -= cost
 		g.upgrades[upgradeType].Level++
@@ -169,24 +174,24 @@ func (wm *WorldMap) handleUpgradeClick(g *Game, upgradeType UpgradeType) {
 func (wm *WorldMap) getUpgradeCost(upgradeType UpgradeType, currentLevel int) int {
 	// Base cost for first level of each upgrade type
 	baseCosts := map[UpgradeType]int{
-		UpgradeHealth:        50,
+		UpgradeHealth:         50,
 		UpgradeBulletStrength: 75,
-		UpgradeBulletSpeed:   60,
-		UpgradeBulletCount:   400,
-		UpgradeSpeed:         80,
-		UpgradeMagnetism:     90,
-		UpgradeLuck:          65,
+		UpgradeBulletSpeed:    60,
+		UpgradeBulletCount:    400,
+		UpgradeSpeed:          80,
+		UpgradeMagnetism:      90,
+		UpgradeLuck:           65,
 	}
-	
+
 	maxLevel := 7
 	if upgradeType == UpgradeBulletCount {
 		maxLevel = 4
 	}
-	
+
 	if currentLevel >= maxLevel {
 		return 999999 // Max level reached
 	}
-	
+
 	baseCost := baseCosts[upgradeType]
 	// Cost increases exponentially: baseCost * (level + 1)
 	return baseCost * (currentLevel + 1)
@@ -227,12 +232,14 @@ func (wm *WorldMap) Draw(screen *ebiten.Image, g *Game) {
 	upgradeOp.GeoM.Translate(0, float64(upgradeLayerY))
 	screen.DrawImage(wm.upgradeLayer, upgradeOp)
 	levelSelectOp := &ebiten.DrawImageOptions{}
+	levelSelectOp.GeoM.Translate(0, 0)
 	screen.DrawImage(wm.levelSelectLayer, levelSelectOp)
 	wm.drawLevelSelectButtons(screen, g)
 	wm.drawUpgradeBars(screen, g)
 	wm.drawUpgradePlusSigns(screen)
 	wm.drawUpgradeHoverText(screen, g)
 	wm.drawCoinCount(screen, g)
+	wm.drawTestingHint(screen)
 }
 
 func (wm *WorldMap) drawLevelSelectButtons(screen *ebiten.Image, g *Game) {
@@ -490,26 +497,21 @@ func (wm *WorldMap) wrapText(text string, maxLen int) []string {
 	if len(text) <= maxLen {
 		return []string{text}
 	}
-	
+
 	var lines []string
 	for len(text) > maxLen {
-		// Find the last space before maxLen
-		splitPos := maxLen
-		for i := maxLen - 1; i >= 0; i-- {
-			if text[i] == ' ' {
-				splitPos = i
-				break
-			}
+		space := maxLen
+		for space > 0 && text[space] != ' ' {
+			space--
 		}
-		
-		lines = append(lines, text[:splitPos])
-		text = text[splitPos+1:] // Skip the space
+		if space == 0 {
+			space = maxLen
+		}
+		lines = append(lines, text[:space])
+		text = text[space+1:]
 	}
-	
-	if len(text) > 0 {
-		lines = append(lines, text)
-	}
-	
+	lines = append(lines, text)
+
 	return lines
 }
 
@@ -525,41 +527,41 @@ func (wm *WorldMap) drawUpgradeHoverText(screen *ebiten.Image, g *Game) {
 	mx, my := ebiten.CursorPosition()
 	if upgradeType, ok := wm.plusSignAtScreen(mx, my); ok {
 		currentLevel := g.upgrades[upgradeType].Level
-		
+
 		// Get upgrade info
 		name, description := wm.getUpgradeInfo(upgradeType)
-		
+
 		// Position tooltip above the plus sign
 		tooltipX := float64(upgradeSlotStartX) + 40
 		tooltipY := float64(upgradeSlotStartY + (int(upgradeType)+1)*upgradeSlotStepY)
-		
+
 		// Calculate tooltip dimensions
 		padding := 6
 		lineHeight := 14
 		descLines := wm.wrapText(description, 20) // Wrap to 30 chars per line
-		
+
 		// Calculate background size
 		bgWidth := 180
 		bgHeight := padding*2 + lineHeight + len(descLines)*lineHeight + lineHeight // name + desc lines + cost
-		
+
 		// Draw semi-transparent black background
 		bgColor := color.RGBA{0, 0, 0, 200} // Semi-transparent black
 		vector.FillRect(screen, float32(tooltipX-3), float32(tooltipY-3), float32(bgWidth), float32(bgHeight), bgColor, false)
-		
+
 		// Use system font if available, otherwise fallback to bitmap font
 		if wm.tooltipFont != nil {
 			// Draw with system font
 			textColor := color.RGBA{255, 255, 255, 255}
-			
+
 			// Draw upgrade name
 			text.Draw(screen, name, wm.tooltipFont, int(tooltipX+float64(padding)), int(tooltipY+float64(padding+lineHeight-5)), textColor)
-			
+
 			// Draw description
 			for i, line := range descLines {
 				text.Draw(screen, line, wm.tooltipFont, int(tooltipX+float64(padding)), int(tooltipY+float64(padding+lineHeight-5+(i+1)*lineHeight)), textColor)
 			}
-			
-				// Draw cost or MAX level
+
+			// Draw cost or MAX level
 			costY := tooltipY + float64(padding+lineHeight-5+(len(descLines)+1)*lineHeight)
 			maxLevel := 7
 			if upgradeType == UpgradeBulletCount {
@@ -579,12 +581,12 @@ func (wm *WorldMap) drawUpgradeHoverText(screen *ebiten.Image, g *Game) {
 			}
 			// Draw upgrade name (larger font with shadow)
 			wm.font.DrawTextWithShadow(screen, name, tooltipX+float64(padding), tooltipY+float64(padding), 1.2)
-			
+
 			// Draw description (medium font with shadow)
 			for i, line := range descLines {
 				wm.font.DrawTextWithShadow(screen, line, tooltipX+float64(padding), tooltipY+float64(padding+lineHeight+i*lineHeight), 1.0)
 			}
-			
+
 			// Draw cost or MAX level (medium font with shadow)
 			costY := tooltipY + float64(padding+lineHeight+len(descLines)*lineHeight)
 			maxLevel := 7
@@ -598,6 +600,15 @@ func (wm *WorldMap) drawUpgradeHoverText(screen *ebiten.Image, g *Game) {
 				costText := fmt.Sprintf("Cost: %d coins", cost)
 				wm.font.DrawTextWithShadow(screen, costText, tooltipX+float64(padding), costY, 1.0)
 			}
+		}
+	}
+}
+
+func (wm *WorldMap) drawTestingHint(screen *ebiten.Image) {
+	// Show testing hint when shift is pressed
+	if ebiten.IsKeyPressed(ebiten.KeyShift) || ebiten.IsKeyPressed(ebiten.KeyShiftLeft) || ebiten.IsKeyPressed(ebiten.KeyShiftRight) {
+		if wm.font != nil {
+			wm.font.DrawTextWithShadow(screen, "Shift+Click: Test any level", 10, 580, 1.0)
 		}
 	}
 }

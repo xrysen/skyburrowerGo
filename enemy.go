@@ -20,6 +20,7 @@ const (
 	FlutternatType    EnemyType = "flutternat"
 	ThistleTurretType EnemyType = "thistleturret"
 	SporespinnerType  EnemyType = "sporespinner"
+	OwlbertType       EnemyType = "owlbert"
 )
 
 func CreateEnemy(enemyType EnemyType, x, y float64, image map[EnemyType]*ebiten.Image, podImg *ebiten.Image) Enemy {
@@ -39,6 +40,8 @@ func CreateEnemy(enemyType EnemyType, x, y float64, image map[EnemyType]*ebiten.
 		return NewThistleTurret(x, y, image[ThistleTurretType], podImg)
 	case SporespinnerType:
 		return NewSporespinner(x, y, image[SporespinnerType])
+	case OwlbertType:
+		return NewOwlbert(x, y, image[OwlbertType])
 	}
 	return nil
 }

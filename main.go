@@ -53,6 +53,8 @@ type Game struct {
 	enemyImage        map[EnemyType]*ebiten.Image
 	podImg            *ebiten.Image
 	sporeImg          *ebiten.Image
+	featherImg        *ebiten.Image
+	talonImg          *ebiten.Image
 	spawnTimers       map[EnemyType]int
 	spawnCounts       map[EnemyType]int
 	currentLevel      *LevelConfig
@@ -157,8 +159,19 @@ func (g *Game) updatePlaying() {
 	for _, e := range g.enemies {
 		e.Update(g.player.x, g.player.y, g)
 		ex, _ := e.GetPosition()
-		if ex > -100 && !e.IsDead() {
-			activeEnemies = append(activeEnemies, e)
+
+		// Handle boss death updates
+		if owlbert, ok := e.(*Owlbert); ok {
+			owlbert.UpdateDeath(g)
+			// Keep Owlbert visible during death sequence for coin collection
+			if ex > -100 && !owlbert.IsDeathComplete() {
+				activeEnemies = append(activeEnemies, e)
+			}
+		} else {
+			// Regular enemy cleanup
+			if ex > -100 && !e.IsDead() {
+				activeEnemies = append(activeEnemies, e)
+			}
 		}
 	}
 	g.enemies = activeEnemies
@@ -188,6 +201,22 @@ func (g *Game) updatePlaying() {
 			if spawnCfg.EndFrame > 0 && g.levelTimer > spawnCfg.EndFrame {
 				continue
 			}
+
+			// Stop spawning if boss is dying or defeated (in boss levels)
+			if g.currentLevel.BossType != "" {
+				// Check if any boss is dying
+				bossDying := false
+				for _, e := range g.enemies {
+					if owlbert, ok := e.(*Owlbert); ok && owlbert.isDying {
+						bossDying = true
+						break
+					}
+				}
+				if bossDying || g.bossKilled {
+					continue
+				}
+			}
+
 			g.spawnTimers[spawnCfg.EnemyType]++
 			if g.spawnTimers[spawnCfg.EnemyType] >= spawnCfg.SpawnRate {
 				g.spawnTimers[spawnCfg.EnemyType] = 0
@@ -236,17 +265,23 @@ func (g *Game) updatePlaying() {
 		}
 		g.coins = activeCoins
 
-		for i := 0; i < CarrotsPerLevel; i++ {
-			if g.carrotSpawned[i] {
-				continue
+		// Check if this is a boss level and spawn carrots based on health
+		if g.currentLevel.BossType != "" {
+			g.spawnBossCarrots()
+		} else {
+			// Regular time-based carrot spawning for non-boss levels
+			for i := 0; i < CarrotsPerLevel; i++ {
+				if g.carrotSpawned[i] {
+					continue
+				}
+				if g.levelTimer < g.carrotSpawnFrames[i] {
+					continue
+				}
+				cy := rand.Float64() * float64(max(1, ScreenHeight-g.carrotImg.Bounds().Dy()))
+				carrot := NewLevelCarrot(650+rand.Float64()*100, cy, i, g.carrotImg)
+				g.levelCarrots = append(g.levelCarrots, carrot)
+				g.carrotSpawned[i] = true
 			}
-			if g.levelTimer < g.carrotSpawnFrames[i] {
-				continue
-			}
-			cy := rand.Float64() * float64(max(1, ScreenHeight-g.carrotImg.Bounds().Dy()))
-			carrot := NewLevelCarrot(650+rand.Float64()*100, cy, i, g.carrotImg)
-			g.levelCarrots = append(g.levelCarrots, carrot)
-			g.carrotSpawned[i] = true
 		}
 
 		var activeCarrots []*LevelCarrot
@@ -290,6 +325,9 @@ func (g *Game) updatePlaying() {
 		for _, b := range g.bullets {
 			bx, by := b.GetPosition()
 			for _, e := range g.enemies {
+				if e.IsDead() {
+					continue
+				}
 				ex, ey := e.GetPosition()
 				ew, eh := e.GetBounds()
 				if checkCollision(bx, by, 8, 8, ex, ey, ew, eh) {
@@ -310,13 +348,16 @@ func (g *Game) updatePlaying() {
 			}
 
 			for _, e := range g.enemies {
+				if e.IsDead() {
+					continue
+				}
 				ex, ey := e.GetPosition()
 				ew, eh := e.GetBounds()
 
-				hitboxWidth := float64(g.player.frameWidth) * 0.7
-				hitboxHeight := float64(g.player.frameHeight) * 0.7
-				offsetX := float64(g.player.frameWidth) * 0.15
-				offsetY := float64(g.player.frameHeight) * 0.15
+				hitboxWidth := float64(g.player.frameWidth) * 0.5
+				hitboxHeight := float64(g.player.frameHeight) * 0.5
+				offsetX := float64(g.player.frameWidth) * 0.25
+				offsetY := float64(g.player.frameWidth) * 0.25
 
 				if checkCollision(g.player.x+offsetX, g.player.y+offsetY, hitboxWidth, hitboxHeight, ex, ey, ew, eh) {
 					g.player.TakeDamage(1)
@@ -337,13 +378,39 @@ func (g *Game) updatePlaying() {
 			offsetX := float64(g.player.frameWidth) * 0.15
 			offsetY := float64(g.player.frameHeight) * 0.15
 
-			if checkCollision(g.player.x+offsetX, g.player.y+offsetY, hitboxWidth, hitboxHeight, bx, by, 8, 8) {
+			// Get bullet bounds for proper collision detection
+			var bulletWidth, bulletHeight float64
+			switch bullet := b.(type) {
+			case *FeatherBullet:
+				bulletWidth, bulletHeight = bullet.GetBounds()
+			case *TalonStrike:
+				if !bullet.IsActive() {
+					continue // Skip inactive talon strikes
+				}
+				bulletWidth, bulletHeight = bullet.GetBounds()
+			case *SporeBullet:
+				bulletWidth, bulletHeight = 16, 16 // Default spore size
+			case *PodBullet:
+				bulletWidth, bulletHeight = 16, 16 // Default pod size
+			default:
+				bulletWidth, bulletHeight = 8, 8 // Fallback size
+			}
+
+			if checkCollision(g.player.x+offsetX, g.player.y+offsetY, hitboxWidth, hitboxHeight, bx, by, bulletWidth, bulletHeight) {
 				g.player.TakeDamage(b.GetDamage())
 
 				// Move bullet off screen
 				if pb, ok := b.(*PodBullet); ok {
 					pb.x = 1000
 					pb.y = 1000
+				} else if fb, ok := b.(*FeatherBullet); ok {
+					fb.x = 1000
+					fb.y = 1000
+				} else if ts, ok := b.(*TalonStrike); ok {
+					ts.active = false // Deactivate talon strike
+				} else if sb, ok := b.(*SporeBullet); ok {
+					sb.x = 1000
+					sb.y = 1000
 				}
 
 				if g.player.IsDead() {
@@ -353,13 +420,16 @@ func (g *Game) updatePlaying() {
 		}
 
 		for _, e := range g.enemies {
+			if e.IsDead() {
+				continue
+			}
 			ex, ey := e.GetPosition()
 			ew, eh := e.GetBounds()
 
-			hitboxWidth := float64(g.player.frameWidth) * 0.7
-			hitboxHeight := float64(g.player.frameHeight) * 0.7
-			offsetX := float64(g.player.frameWidth) * 0.15
-			offsetY := float64(g.player.frameHeight) * 0.15
+			hitboxWidth := float64(g.player.frameWidth) * 0.5
+			hitboxHeight := float64(g.player.frameHeight) * 0.5
+			offsetX := float64(g.player.frameWidth) * 0.25
+			offsetY := float64(g.player.frameHeight) * 0.25
 
 			if checkCollision(g.player.x+offsetX, g.player.y+offsetY, hitboxWidth, hitboxHeight, ex, ey, ew, eh) {
 				g.player.TakeDamage(1)
@@ -496,6 +566,38 @@ func (g *Game) transitionToWorldMapFromGameOver() {
 	g.state = StateLevel // Reset state for next level attempt
 }
 
+func (g *Game) spawnBossCarrots() {
+	// Find the boss (should be Owlbert in Level 5)
+	var boss Enemy
+	for _, e := range g.enemies {
+		if owlbert, ok := e.(*Owlbert); ok {
+			boss = owlbert
+			break
+		}
+	}
+
+	if boss == nil {
+		return // No boss found
+	}
+
+	// Health thresholds for carrot spawning (100 HP total)
+	healthThresholds := [5]int{80, 60, 40, 20, 10}
+
+	for i := 0; i < CarrotsPerLevel; i++ {
+		if g.carrotSpawned[i] {
+			continue
+		}
+
+		// Check if boss health has reached the threshold
+		if boss.(*Owlbert).health <= healthThresholds[i] {
+			cy := rand.Float64() * float64(max(1, ScreenHeight-g.carrotImg.Bounds().Dy()))
+			carrot := NewLevelCarrot(650+rand.Float64()*100, cy, i, g.carrotImg)
+			g.levelCarrots = append(g.levelCarrots, carrot)
+			g.carrotSpawned[i] = true
+		}
+	}
+}
+
 func (g *Game) loadLevel(level *LevelConfig) {
 	g.currentLevel = level
 	g.runLevelCarrotMask = 0
@@ -506,6 +608,12 @@ func (g *Game) loadLevel(level *LevelConfig) {
 	g.spawnTimers = make(map[EnemyType]int)
 	g.spawnCounts = make(map[EnemyType]int)
 	g.bossKilled = false
+
+	// Spawn boss if this level has one
+	if level.BossType != "" {
+		boss := CreateEnemy(level.BossType, 550, 200, g.enemyImage, g.podImg)
+		g.enemies = append(g.enemies, boss)
+	}
 
 	// Start fade in
 	g.fadeAlpha = 1.0
@@ -628,6 +736,8 @@ func main() {
 		enemyImage:           assets.EnemyImages,
 		podImg:               assets.PodImg,
 		sporeImg:             assets.SporeImg,
+		featherImg:           assets.FeatherImg,
+		talonImg:             assets.TalonImg,
 		spawnTimers:          make(map[EnemyType]int),
 		spawnCounts:          make(map[EnemyType]int),
 		coinImg:              assets.CoinImg,

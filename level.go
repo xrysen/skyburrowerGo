@@ -85,6 +85,8 @@ func GetLevelForWorldSlot(slot int) *LevelConfig {
 		return GetLevel1()
 	case 2:
 		return GetLevel2()
+	case 5:
+		return GetLevel5()
 	default:
 		return nil
 	}
@@ -108,5 +110,30 @@ func GetLevel2() *LevelConfig {
 		EndCondition: EndOnTimer,
 		Duration:     Seconds45,
 		NextLevel:    nil,
+	}
+}
+
+func GetLevel5() *LevelConfig {
+	return &LevelConfig{
+		WorldLevel: 5,
+		Name:       "Owlbert's Lair",
+		BackgroundPaths: [4]string{
+			"Levels/Level1/lvl1-1.png",
+			"Levels/Level1/lvl1-2.png",
+			"Levels/Level1/lvl1-3.png",
+			"Levels/Level1/lvl1-4.png",
+		},
+		SpawnConfigs: []SpawnConfig{
+			// Increased Flutternat spawning for boss level
+			{EnemyType: FlutternatType, SpawnRate: 180, RandomY: true, MinSpawns: 2, MaxSpawns: 3, StartFrame: 120},
+		},
+
+		EndCondition: EndOnBossDeath,
+		BossType:     OwlbertType,
+		NextLevel:    nil,
+		CoinSpawnConfig: CoinSpawnConfig{
+			SpawnRate: 120, // Still spawn coins during boss fight
+			RandomY:   true,
+		},
 	}
 }
