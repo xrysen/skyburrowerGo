@@ -63,9 +63,7 @@ func GetLevel1() *LevelConfig {
 			"Levels/Level1/lvl1-4.png",
 		},
 		SpawnConfigs: []SpawnConfig{
-			{EnemyType: FlutternatType, SpawnRate: 120, RandomY: true, MinSpawns: 1, MaxSpawns: 3, StartFrame: 100},
-			{EnemyType: ThistleTurretType, SpawnRate: 180, RandomY: false, MinSpawns: 1, MaxSpawns: 2, StartFrame: 120},
-			{EnemyType: SporespinnerType, SpawnRate: 150, RandomY: true, MinSpawns: 1, MaxSpawns: 2, StartFrame: 80},
+			{EnemyType: FlutternatType, SpawnRate: 180, RandomY: true, MinSpawns: 1, MaxSpawns: 2, StartFrame: 120},
 		},
 
 		EndCondition: EndOnTimer,
@@ -85,6 +83,10 @@ func GetLevelForWorldSlot(slot int) *LevelConfig {
 		return GetLevel1()
 	case 2:
 		return GetLevel2()
+	case 3:
+		return GetLevel3()
+	case 4:
+		return GetLevel4()
 	case 5:
 		return GetLevel5()
 	default:
@@ -103,13 +105,69 @@ func GetLevel2() *LevelConfig {
 			"Levels/Level1/lvl1-4.png",
 		},
 		SpawnConfigs: []SpawnConfig{
-			{EnemyType: FlutternatType, SpawnRate: 90, RandomY: true, MinSpawns: 2, MaxSpawns: 4, StartFrame: 60},
-			{EnemyType: ThistleTurretType, SpawnRate: 180, RandomY: false, MinSpawns: 1, MaxSpawns: 2, StartFrame: 120},
+			{EnemyType: FlutternatType, SpawnRate: 150, RandomY: true, MinSpawns: 1, MaxSpawns: 3, StartFrame: 100},
+			{EnemyType: SporespinnerType, SpawnRate: 160, RandomY: true, MinSpawns: 1, MaxSpawns: 2, StartFrame: 80},
 		},
 
 		EndCondition: EndOnTimer,
 		Duration:     Seconds45,
-		NextLevel:    nil,
+		NextLevel:    GetLevel3,
+		CoinSpawnConfig: CoinSpawnConfig{
+			SpawnRate: 160,
+			RandomY:   true,
+		},
+	}
+}
+
+func GetLevel3() *LevelConfig {
+	return &LevelConfig{
+		WorldLevel: 3,
+		Name:       "Thistle Grove",
+		BackgroundPaths: [4]string{
+			"Levels/Level1/lvl1-1.png",
+			"Levels/Level1/lvl1-2.png",
+			"Levels/Level1/lvl1-3.png",
+			"Levels/Level1/lvl1-4.png",
+		},
+		SpawnConfigs: []SpawnConfig{
+			{EnemyType: FlutternatType, SpawnRate: 130, RandomY: true, MinSpawns: 2, MaxSpawns: 3, StartFrame: 80},
+			{EnemyType: SporespinnerType, SpawnRate: 140, RandomY: true, MinSpawns: 1, MaxSpawns: 2, StartFrame: 60},
+			{EnemyType: ThistleTurretType, SpawnRate: 200, RandomY: false, MinSpawns: 1, MaxSpawns: 1, StartFrame: 120},
+		},
+
+		EndCondition: EndOnTimer,
+		Duration:     Seconds45,
+		NextLevel:    GetLevel4,
+		CoinSpawnConfig: CoinSpawnConfig{
+			SpawnRate: 140,
+			RandomY:   true,
+		},
+	}
+}
+
+func GetLevel4() *LevelConfig {
+	return &LevelConfig{
+		WorldLevel: 4,
+		Name:       "Forest Chaos",
+		BackgroundPaths: [4]string{
+			"Levels/Level1/lvl1-1.png",
+			"Levels/Level1/lvl1-2.png",
+			"Levels/Level1/lvl1-3.png",
+			"Levels/Level1/lvl1-4.png",
+		},
+		SpawnConfigs: []SpawnConfig{
+			{EnemyType: FlutternatType, SpawnRate: 100, RandomY: true, MinSpawns: 2, MaxSpawns: 4, StartFrame: 60},
+			{EnemyType: SporespinnerType, SpawnRate: 120, RandomY: true, MinSpawns: 2, MaxSpawns: 3, StartFrame: 40},
+			{EnemyType: ThistleTurretType, SpawnRate: 180, RandomY: false, MinSpawns: 1, MaxSpawns: 2, StartFrame: 100},
+		},
+
+		EndCondition: EndOnTimer,
+		Duration:     Seconds60,
+		NextLevel:    GetLevel5,
+		CoinSpawnConfig: CoinSpawnConfig{
+			SpawnRate: 120,
+			RandomY:   true,
+		},
 	}
 }
 
