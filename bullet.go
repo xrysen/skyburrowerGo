@@ -126,3 +126,45 @@ func (b *PodBullet) GetPosition() (float64, float64) {
 func (b *PodBullet) GetDamage() int {
 	return b.damage
 }
+
+type SporeBullet struct {
+	BaseBullet
+	vx, vy float64
+}
+
+func NewSporeBullet(x, y float64, img *ebiten.Image) *SporeBullet {
+	return &SporeBullet{
+		BaseBullet: BaseBullet{
+			x:      x,
+			y:      y,
+			img:    img,
+			damage: 1,
+		},
+		vx: -3.0, // Default speed to the left
+		vy: 0.0,
+	}
+}
+
+func (b *SporeBullet) SetVelocity(vx, vy float64) {
+	b.vx = vx
+	b.vy = vy
+}
+
+func (b *SporeBullet) Update() {
+	b.x += b.vx
+	b.y += b.vy
+}
+
+func (b *SporeBullet) Draw(screen *ebiten.Image) {
+	op := &ebiten.DrawImageOptions{}
+	op.GeoM.Translate(b.x, b.y)
+	screen.DrawImage(b.img, op)
+}
+
+func (b *SporeBullet) GetPosition() (float64, float64) {
+	return b.x, b.y
+}
+
+func (b *SporeBullet) GetDamage() int {
+	return b.damage
+}

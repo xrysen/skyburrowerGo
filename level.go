@@ -65,6 +65,7 @@ func GetLevel1() *LevelConfig {
 		SpawnConfigs: []SpawnConfig{
 			{EnemyType: FlutternatType, SpawnRate: 120, RandomY: true, MinSpawns: 1, MaxSpawns: 3, StartFrame: 100},
 			{EnemyType: ThistleTurretType, SpawnRate: 180, RandomY: false, MinSpawns: 1, MaxSpawns: 2, StartFrame: 120},
+			{EnemyType: SporespinnerType, SpawnRate: 150, RandomY: true, MinSpawns: 1, MaxSpawns: 2, StartFrame: 80},
 		},
 
 		EndCondition: EndOnTimer,

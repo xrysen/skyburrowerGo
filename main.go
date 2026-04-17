@@ -52,6 +52,7 @@ type Game struct {
 	enemies           []Enemy
 	enemyImage        map[EnemyType]*ebiten.Image
 	podImg            *ebiten.Image
+	sporeImg          *ebiten.Image
 	spawnTimers       map[EnemyType]int
 	spawnCounts       map[EnemyType]int
 	currentLevel      *LevelConfig
@@ -626,6 +627,7 @@ func main() {
 		bulletImg:            assets.BulletImg,
 		enemyImage:           assets.EnemyImages,
 		podImg:               assets.PodImg,
+		sporeImg:             assets.SporeImg,
 		spawnTimers:          make(map[EnemyType]int),
 		spawnCounts:          make(map[EnemyType]int),
 		coinImg:              assets.CoinImg,
