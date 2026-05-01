@@ -72,7 +72,7 @@ func (c *CloudDrifter) fireCircularSpread(game *Game) {
 		angle := 2 * math.Pi * float64(i) / 8
 		vx := math.Cos(angle) * c.bulletSpeed
 		vy := math.Sin(angle) * c.bulletSpeed
-		bolt := NewLightningBolt(cx, cy, vx, vy)
+		bolt := NewLightningBolt(cx, cy, vx, vy, game.boltImg, 0.5)
 		game.enemyBullets = append(game.enemyBullets, bolt)
 	}
 }

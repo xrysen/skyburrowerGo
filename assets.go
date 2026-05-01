@@ -16,6 +16,8 @@ type Assets struct {
 	FeatherImg  *ebiten.Image
 	TalonImg    *ebiten.Image
 
+	BoltImg *ebiten.Image
+
 	HeartImg  *ebiten.Image
 	HudBg     *ebiten.Image
 	FontImg   *ebiten.Image
@@ -42,6 +44,7 @@ func LoadAssets() *Assets {
 
 	a.PlayerImg = loadImage("Assets/Player/MeadowSprite-sheet.png")
 	a.BulletImg = loadImage("Assets/Bullets/seedShot.png")
+	a.BoltImg = loadImage("Assets/Bullets/bolt.png")
 
 	a.EnemyImages = map[EnemyType]*ebiten.Image{
 		FlutternatType:    loadImage("Assets/Enemies/Flutternat/flutterNat.png"),

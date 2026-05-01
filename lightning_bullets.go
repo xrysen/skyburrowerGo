@@ -2,19 +2,23 @@ package main
 
 import (
 	"image/color"
+	"math"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
-// LightningBolt is a velocity-based projectile drawn as a yellow flash.
+// LightningBolt is a velocity-based projectile drawn using the bolt sprite.
 type LightningBolt struct {
 	x, y   float64
 	vx, vy float64
+	img    *ebiten.Image
+	angle  float64
+	scale  float64
 }
 
-func NewLightningBolt(x, y, vx, vy float64) *LightningBolt {
-	return &LightningBolt{x: x, y: y, vx: vx, vy: vy}
+func NewLightningBolt(x, y, vx, vy float64, img *ebiten.Image, scale float64) *LightningBolt {
+	return &LightningBolt{x: x, y: y, vx: vx, vy: vy, img: img, angle: math.Atan2(vy, vx), scale: scale}
 }
 
 func (b *LightningBolt) Update() {
@@ -23,11 +27,29 @@ func (b *LightningBolt) Update() {
 }
 
 func (b *LightningBolt) Draw(screen *ebiten.Image) {
-	vector.FillRect(screen, float32(b.x), float32(b.y), 12, 4, color.RGBA{255, 255, 0, 255}, false)
+	if b.img != nil {
+		w := float64(b.img.Bounds().Dx())
+		h := float64(b.img.Bounds().Dy())
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(-w/2, -h/2)
+		op.GeoM.Rotate(b.angle - math.Pi/2) // bolt.png faces down
+		op.GeoM.Scale(b.scale, b.scale)
+		op.GeoM.Translate(b.x, b.y)
+		screen.DrawImage(b.img, op)
+	} else {
+		vector.FillRect(screen, float32(b.x), float32(b.y), 12, 4, color.RGBA{255, 255, 0, 255}, false)
+	}
 }
 
-func (b *LightningBolt) GetPosition() (float64, float64) { return b.x, b.y }
-func (b *LightningBolt) GetDamage() int                  { return 1 }
+func (b *LightningBolt) hitboxSize() float64 { return b.scale * 24 }
+
+// GetPosition returns the top-left of the hitbox (centered on the bullet).
+func (b *LightningBolt) GetPosition() (float64, float64) {
+	h := b.hitboxSize()
+	return b.x - h/2, b.y - h/2
+}
+func (b *LightningBolt) GetDamage() int                { return 1 }
+func (b *LightningBolt) GetBounds() (float64, float64) { h := b.hitboxSize(); return h, h }
 
 // CloudProjectile is a velocity-based projectile drawn as a white puff.
 type CloudProjectile struct {
@@ -51,14 +73,17 @@ func (b *CloudProjectile) Draw(screen *ebiten.Image) {
 func (b *CloudProjectile) GetPosition() (float64, float64) { return b.x, b.y }
 func (b *CloudProjectile) GetDamage() int                  { return 1 }
 
-// ChainLightningBolt is a velocity-based aimed bolt drawn as a jagged yellow line.
+// ChainLightningBolt is a velocity-based aimed bolt drawn using the bolt sprite.
 type ChainLightningBolt struct {
 	x, y   float64
 	vx, vy float64
+	img    *ebiten.Image
+	angle  float64
+	scale  float64
 }
 
-func NewChainLightningBolt(x, y, vx, vy float64) *ChainLightningBolt {
-	return &ChainLightningBolt{x: x, y: y, vx: vx, vy: vy}
+func NewChainLightningBolt(x, y, vx, vy float64, img *ebiten.Image, scale float64) *ChainLightningBolt {
+	return &ChainLightningBolt{x: x, y: y, vx: vx, vy: vy, img: img, angle: math.Atan2(vy, vx), scale: scale}
 }
 
 func (b *ChainLightningBolt) Update() {
@@ -67,14 +92,32 @@ func (b *ChainLightningBolt) Update() {
 }
 
 func (b *ChainLightningBolt) Draw(screen *ebiten.Image) {
-	// Jagged three-segment line
-	vector.StrokeLine(screen, float32(b.x), float32(b.y), float32(b.x-5), float32(b.y+3), 2, color.RGBA{255, 240, 0, 255}, false)
-	vector.StrokeLine(screen, float32(b.x-5), float32(b.y+3), float32(b.x-10), float32(b.y-2), 2, color.RGBA{255, 240, 0, 255}, false)
-	vector.StrokeLine(screen, float32(b.x-10), float32(b.y-2), float32(b.x-15), float32(b.y), 2, color.RGBA{255, 240, 0, 255}, false)
+	if b.img != nil {
+		w := float64(b.img.Bounds().Dx())
+		h := float64(b.img.Bounds().Dy())
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(-w/2, -h/2)
+		op.GeoM.Rotate(b.angle - math.Pi/2) // bolt.png faces down
+		op.GeoM.Scale(b.scale, b.scale)
+		op.GeoM.Translate(b.x, b.y)
+		screen.DrawImage(b.img, op)
+	} else {
+		// Jagged three-segment line fallback
+		vector.StrokeLine(screen, float32(b.x), float32(b.y), float32(b.x-5), float32(b.y+3), 2, color.RGBA{255, 240, 0, 255}, false)
+		vector.StrokeLine(screen, float32(b.x-5), float32(b.y+3), float32(b.x-10), float32(b.y-2), 2, color.RGBA{255, 240, 0, 255}, false)
+		vector.StrokeLine(screen, float32(b.x-10), float32(b.y-2), float32(b.x-15), float32(b.y), 2, color.RGBA{255, 240, 0, 255}, false)
+	}
 }
 
-func (b *ChainLightningBolt) GetPosition() (float64, float64) { return b.x, b.y }
-func (b *ChainLightningBolt) GetDamage() int                  { return 1 }
+func (b *ChainLightningBolt) hitboxSize() float64 { return b.scale * 24 }
+
+// GetPosition returns the top-left of the hitbox (centered on the bullet).
+func (b *ChainLightningBolt) GetPosition() (float64, float64) {
+	h := b.hitboxSize()
+	return b.x - h/2, b.y - h/2
+}
+func (b *ChainLightningBolt) GetDamage() int                { return 1 }
+func (b *ChainLightningBolt) GetBounds() (float64, float64) { h := b.hitboxSize(); return h, h }
 
 // ElectricalRing expands outward from its spawn point.
 // Collision is active while radius is in [8, 20].

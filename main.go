@@ -55,6 +55,7 @@ type Game struct {
 	sporeImg          *ebiten.Image
 	featherImg        *ebiten.Image
 	talonImg          *ebiten.Image
+	boltImg           *ebiten.Image
 	spawnTimers       map[EnemyType]int
 	spawnCounts       map[EnemyType]int
 	currentLevel      *LevelConfig
@@ -395,6 +396,10 @@ func (g *Game) updatePlaying() {
 				if !bullet.IsActive() {
 					continue // Skip inactive talon strikes
 				}
+				bulletWidth, bulletHeight = bullet.GetBounds()
+			case *LightningBolt:
+				bulletWidth, bulletHeight = bullet.GetBounds()
+			case *ChainLightningBolt:
 				bulletWidth, bulletHeight = bullet.GetBounds()
 			case *SporeBullet:
 				bulletWidth, bulletHeight = 16, 16 // Default spore size
@@ -759,6 +764,7 @@ func main() {
 		sporeImg:             assets.SporeImg,
 		featherImg:           assets.FeatherImg,
 		talonImg:             assets.TalonImg,
+		boltImg:              assets.BoltImg,
 		spawnTimers:          make(map[EnemyType]int),
 		spawnCounts:          make(map[EnemyType]int),
 		coinImg:              assets.CoinImg,

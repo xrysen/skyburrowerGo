@@ -189,7 +189,7 @@ func (tc *ThunderCrab) fireAttack(attackType int, px, py float64, game *Game) {
 	case tellLightning:
 		angle := math.Atan2(py-cy, px-cx)
 		speed := tc.bulletSpeed
-		bolt := NewLightningBolt(cx, cy, math.Cos(angle)*speed, math.Sin(angle)*speed)
+		bolt := NewLightningBolt(cx, cy, math.Cos(angle)*speed, math.Sin(angle)*speed, game.boltImg, 1.0)
 		game.enemyBullets = append(game.enemyBullets, bolt)
 
 	case tellCloud:
@@ -207,7 +207,7 @@ func (tc *ThunderCrab) fireAttack(attackType int, px, py float64, game *Game) {
 		baseAngle := math.Atan2(py-cy, px-cx)
 		for i := -1; i <= 1; i++ {
 			a := baseAngle + float64(i)*math.Pi/8
-			bolt := NewChainLightningBolt(cx, cy, math.Cos(a)*tc.bulletSpeed, math.Sin(a)*tc.bulletSpeed)
+			bolt := NewChainLightningBolt(cx, cy, math.Cos(a)*tc.bulletSpeed, math.Sin(a)*tc.bulletSpeed, game.boltImg, 1.0)
 			game.enemyBullets = append(game.enemyBullets, bolt)
 		}
 

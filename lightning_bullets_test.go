@@ -14,7 +14,7 @@ var (
 // --- LightningBolt ---
 
 func TestLightningBolt_MovesOnUpdate(t *testing.T) {
-	b := NewLightningBolt(100, 100, -5.0, 0.0)
+	b := NewLightningBolt(100, 100, -5.0, 0.0, nil, 0.5)
 	x0, y0 := b.GetPosition()
 	b.Update()
 	x1, y1 := b.GetPosition()
@@ -27,7 +27,7 @@ func TestLightningBolt_MovesOnUpdate(t *testing.T) {
 }
 
 func TestLightningBolt_Damage(t *testing.T) {
-	b := NewLightningBolt(100, 100, -5.0, 0.0)
+	b := NewLightningBolt(100, 100, -5.0, 0.0, nil, 0.5)
 	if b.GetDamage() != 1 {
 		t.Errorf("want damage 1, got %d", b.GetDamage())
 	}
@@ -55,7 +55,7 @@ func TestCloudProjectile_Damage(t *testing.T) {
 // --- ChainLightningBolt ---
 
 func TestChainLightningBolt_MovesOnUpdate(t *testing.T) {
-	b := NewChainLightningBolt(300, 200, -6.0, 1.0)
+	b := NewChainLightningBolt(300, 200, -6.0, 1.0, nil, 0.5)
 	x0, y0 := b.GetPosition()
 	b.Update()
 	x1, y1 := b.GetPosition()
@@ -65,7 +65,7 @@ func TestChainLightningBolt_MovesOnUpdate(t *testing.T) {
 }
 
 func TestChainLightningBolt_Damage(t *testing.T) {
-	b := NewChainLightningBolt(300, 200, -6.0, 1.0)
+	b := NewChainLightningBolt(300, 200, -6.0, 1.0, nil, 0.5)
 	if b.GetDamage() != 1 {
 		t.Errorf("want damage 1, got %d", b.GetDamage())
 	}

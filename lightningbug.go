@@ -79,7 +79,7 @@ func (lb *LightningBug) fireChainBolt(px, py float64, game *Game) {
 	}
 	vx := (dx / dist) * lb.bulletSpeed
 	vy := (dy / dist) * lb.bulletSpeed
-	bolt := NewChainLightningBolt(cx, cy, vx, vy)
+	bolt := NewChainLightningBolt(cx, cy, vx, vy, game.boltImg, 0.5)
 	game.enemyBullets = append(game.enemyBullets, bolt)
 }
 
