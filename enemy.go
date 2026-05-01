@@ -21,9 +21,10 @@ const (
 	ThistleTurretType EnemyType = "thistleturret"
 	SporespinnerType  EnemyType = "sporespinner"
 	OwlbertType       EnemyType = "owlbert"
+	ThunderCrabType   EnemyType = "thundercrab"
 )
 
-func CreateEnemy(enemyType EnemyType, x, y float64, image map[EnemyType]*ebiten.Image, podImg *ebiten.Image) Enemy {
+func CreateEnemy(enemyType EnemyType, x, y float64, image map[EnemyType]*ebiten.Image, podImg *ebiten.Image, bulletSpeed float64, bossHealth int) Enemy {
 	switch enemyType {
 	case FlutternatType:
 		return &Flutternat{
@@ -42,6 +43,18 @@ func CreateEnemy(enemyType EnemyType, x, y float64, image map[EnemyType]*ebiten.
 		return NewSporespinner(x, y, image[SporespinnerType])
 	case OwlbertType:
 		return NewOwlbert(x, y, image[OwlbertType])
+	case CloudDrifterType:
+		return NewCloudDrifter(x, y, image[CloudDrifterType], bulletSpeed)
+	case LightningBugType:
+		return NewLightningBug(x, y, image[LightningBugType], bulletSpeed)
+	case StormSpriteType:
+		return NewStormSprite(x, y, image[StormSpriteType], bulletSpeed)
+	case ThunderCrabType:
+		health := bossHealth
+		if health <= 0 {
+			health = 180
+		}
+		return NewThunderCrab(x, y, health, bulletSpeed, image[ThunderCrabType])
 	}
 	return nil
 }

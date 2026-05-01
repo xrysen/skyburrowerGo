@@ -163,8 +163,12 @@ func (g *Game) updatePlaying() {
 		// Handle boss death updates
 		if owlbert, ok := e.(*Owlbert); ok {
 			owlbert.UpdateDeath(g)
-			// Keep Owlbert visible during death sequence for coin collection
 			if ex > -100 && !owlbert.IsDeathComplete() {
+				activeEnemies = append(activeEnemies, e)
+			}
+		} else if tc, ok := e.(*ThunderCrab); ok {
+			tc.UpdateDeath(g)
+			if ex > -100 && !tc.IsDeathComplete() {
 				activeEnemies = append(activeEnemies, e)
 			}
 		} else {
@@ -211,6 +215,10 @@ func (g *Game) updatePlaying() {
 						bossDying = true
 						break
 					}
+					if tc, ok := e.(*ThunderCrab); ok && tc.isDying {
+						bossDying = true
+						break
+					}
 				}
 				if bossDying || g.bossKilled {
 					continue
@@ -226,7 +234,7 @@ func (g *Game) updatePlaying() {
 				}
 
 				for i := 0; i < count; i++ {
-					g.spawnEnemy(spawnCfg)
+					g.spawnEnemy(spawnCfg, i)
 				}
 			}
 		}
@@ -457,7 +465,7 @@ func (g *Game) drawGameOver(screen *ebiten.Image) {
 	ebitenutil.DebugPrint(screen, "Game Over")
 }
 
-func (g *Game) spawnEnemy(cfg SpawnConfig) {
+func (g *Game) spawnEnemy(cfg SpawnConfig, spawnIndex int) {
 	var y float64
 	var x float64
 
@@ -498,15 +506,26 @@ func (g *Game) spawnEnemy(cfg SpawnConfig) {
 			}
 		}
 	} else {
-		// Other enemies spawn as before
-		y = float64(ScreenHeight) / 2
-		if cfg.RandomY {
-			y = rand.Float64() * ScreenHeight
+		const spriteH = 64.0
+		if cfg.EnemyType == CloudDrifterType {
+			// Keep baseY within drift amplitude so the sprite never leaves the screen
+			const amplitude = 30.0
+			safeRange := float64(ScreenHeight) - spriteH - 2*amplitude
+			y = amplitude + rand.Float64()*safeRange
+		} else if cfg.RandomY {
+			y = rand.Float64() * float64(ScreenHeight-spriteH)
+		} else {
+			y = float64(ScreenHeight) / 2
 		}
-		x = 650 + rand.Float64()*100
+		// Stagger X so multiple enemies spawned in the same batch don't overlap
+		x = 650 + rand.Float64()*50 + float64(spawnIndex)*80
 	}
 
-	enemy := CreateEnemy(cfg.EnemyType, x, y, g.enemyImage, g.podImg)
+	var bulletSpeed float64
+	if g.currentLevel != nil {
+		bulletSpeed = g.currentLevel.BulletSpeed
+	}
+	enemy := CreateEnemy(cfg.EnemyType, x, y, g.enemyImage, g.podImg, bulletSpeed, 0)
 	g.enemies = append(g.enemies, enemy)
 	g.spawnCounts[cfg.EnemyType]++
 }
@@ -567,29 +586,31 @@ func (g *Game) transitionToWorldMapFromGameOver() {
 }
 
 func (g *Game) spawnBossCarrots() {
-	// Find the boss (should be Owlbert in Level 5)
-	var boss Enemy
+	var bossHealth, bossMaxHealth int
 	for _, e := range g.enemies {
 		if owlbert, ok := e.(*Owlbert); ok {
-			boss = owlbert
+			bossHealth = owlbert.health
+			bossMaxHealth = owlbert.maxHealth
+			break
+		}
+		if tc, ok := e.(*ThunderCrab); ok {
+			bossHealth = tc.health
+			bossMaxHealth = tc.maxHealth
 			break
 		}
 	}
-
-	if boss == nil {
-		return // No boss found
+	if bossMaxHealth == 0 {
+		return
 	}
 
-	// Health thresholds for carrot spawning (100 HP total)
-	healthThresholds := [5]int{80, 60, 40, 20, 10}
-
+	// Spawn carrots at 80%, 60%, 40%, 20%, 10% of max health
+	healthPcts := [CarrotsPerLevel]float64{0.80, 0.60, 0.40, 0.20, 0.10}
 	for i := 0; i < CarrotsPerLevel; i++ {
 		if g.carrotSpawned[i] {
 			continue
 		}
-
-		// Check if boss health has reached the threshold
-		if boss.(*Owlbert).health <= healthThresholds[i] {
+		threshold := int(float64(bossMaxHealth) * healthPcts[i])
+		if bossHealth <= threshold {
 			cy := rand.Float64() * float64(max(1, ScreenHeight-g.carrotImg.Bounds().Dy()))
 			carrot := NewLevelCarrot(650+rand.Float64()*100, cy, i, g.carrotImg)
 			g.levelCarrots = append(g.levelCarrots, carrot)
@@ -611,7 +632,7 @@ func (g *Game) loadLevel(level *LevelConfig) {
 
 	// Spawn boss if this level has one
 	if level.BossType != "" {
-		boss := CreateEnemy(level.BossType, 550, 200, g.enemyImage, g.podImg)
+		boss := CreateEnemy(level.BossType, 550, 200, g.enemyImage, g.podImg, level.BulletSpeed, level.BossHealth)
 		g.enemies = append(g.enemies, boss)
 	}
 

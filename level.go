@@ -43,8 +43,10 @@ type LevelConfig struct {
 	EndCondition    LevelEndCondition
 	Duration        int
 	BossType        EnemyType
+	BossHealth      int
 	NextLevel       func() *LevelConfig
 	CoinSpawnConfig CoinSpawnConfig
+	BulletSpeed     float64 // base bullet speed for enemies in this level
 }
 
 type CoinSpawnConfig struct {
@@ -89,8 +91,146 @@ func GetLevelForWorldSlot(slot int) *LevelConfig {
 		return GetLevel4()
 	case 5:
 		return GetLevel5()
+	case 6:
+		return GetLevel6()
+	case 7:
+		return GetLevel7()
+	case 8:
+		return GetLevel8()
+	case 9:
+		return GetLevel9()
+	case 10:
+		return GetLevel10()
 	default:
 		return nil
+	}
+}
+
+func GetLevel6() *LevelConfig {
+	return &LevelConfig{
+		WorldLevel: 6,
+		Name:       "ThunderCloud Ravine",
+		BackgroundPaths: [4]string{
+			"Levels/Level2/lvl2-1.png",
+			"Levels/Level2/lvl2-2.png",
+			"Levels/Level2/lvl2-3.png",
+			"Levels/Level2/lvl2-4.png",
+		},
+		SpawnConfigs: []SpawnConfig{
+			// CloudDrifter and LightningBug introduced together — CloudDrifter first
+			{EnemyType: CloudDrifterType, SpawnRate: 240, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 10},
+			{EnemyType: LightningBugType, SpawnRate: 240, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 120},
+			// Flutternat joins as familiar background and fades out near the end
+			{EnemyType: FlutternatType, SpawnRate: 260, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 300, EndFrame: 2000},
+			// Sporespinner brief mid-level cameo
+			{EnemyType: SporespinnerType, SpawnRate: 320, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 600, EndFrame: 2200},
+		},
+		EndCondition:    EndOnTimer,
+		Duration:        Seconds45,
+		BulletSpeed:     6.0,
+		NextLevel:       GetLevel7,
+		CoinSpawnConfig: CoinSpawnConfig{SpawnRate: 180, RandomY: true},
+	}
+}
+
+func GetLevel7() *LevelConfig {
+	return &LevelConfig{
+		WorldLevel: 7,
+		Name:       "ThunderCloud Ravine",
+		BackgroundPaths: [4]string{
+			"Levels/Level2/lvl2-1.png",
+			"Levels/Level2/lvl2-2.png",
+			"Levels/Level2/lvl2-3.png",
+			"Levels/Level2/lvl2-4.png",
+		},
+		SpawnConfigs: []SpawnConfig{
+			// StormSprite is the star — appears immediately
+			{EnemyType: StormSpriteType, SpawnRate: 260, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 10},
+			// CloudDrifter and LightningBug carry over from L6 as background
+			{EnemyType: CloudDrifterType, SpawnRate: 300, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 300},
+			{EnemyType: LightningBugType, SpawnRate: 280, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 300},
+			// Flutternat — early cameo, retires at the halfway point
+			{EnemyType: FlutternatType, SpawnRate: 300, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 300, EndFrame: 1350},
+		},
+		EndCondition:    EndOnTimer,
+		Duration:        Seconds45,
+		BulletSpeed:     6.5,
+		NextLevel:       GetLevel8,
+		CoinSpawnConfig: CoinSpawnConfig{SpawnRate: 180, RandomY: true},
+	}
+}
+
+func GetLevel8() *LevelConfig {
+	return &LevelConfig{
+		WorldLevel: 8,
+		Name:       "ThunderCloud Ravine",
+		BackgroundPaths: [4]string{
+			"Levels/Level2/lvl2-1.png",
+			"Levels/Level2/lvl2-2.png",
+			"Levels/Level2/lvl2-3.png",
+			"Levels/Level2/lvl2-4.png",
+		},
+		SpawnConfigs: []SpawnConfig{
+			// All three W2 enemies as equals — W1 fully retired
+			{EnemyType: CloudDrifterType, SpawnRate: 260, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 10},
+			{EnemyType: LightningBugType, SpawnRate: 260, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 10},
+			{EnemyType: StormSpriteType, SpawnRate: 280, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 10},
+			// ThistleTurret mid-level cameo for texture
+			{EnemyType: ThistleTurretType, SpawnRate: 380, RandomY: false, MinSpawns: 1, MaxSpawns: 1, StartFrame: 900, EndFrame: 3300},
+		},
+		EndCondition:    EndOnTimer,
+		Duration:        Seconds60,
+		BulletSpeed:     7.0,
+		NextLevel:       GetLevel9,
+		CoinSpawnConfig: CoinSpawnConfig{SpawnRate: 160, RandomY: true},
+	}
+}
+
+func GetLevel9() *LevelConfig {
+	return &LevelConfig{
+		WorldLevel: 9,
+		Name:       "Tempest Gauntlet",
+		BackgroundPaths: [4]string{
+			"Levels/Level2/lvl2-1.png",
+			"Levels/Level2/lvl2-2.png",
+			"Levels/Level2/lvl2-3.png",
+			"Levels/Level2/lvl2-4.png",
+		},
+		SpawnConfigs: []SpawnConfig{
+			// All three W2 enemies as equals — W1 fully retired
+			{EnemyType: CloudDrifterType, SpawnRate: 220, RandomY: true, MinSpawns: 1, MaxSpawns: 2, StartFrame: 60},
+			{EnemyType: LightningBugType, SpawnRate: 200, RandomY: true, MinSpawns: 1, MaxSpawns: 2, StartFrame: 60},
+			{EnemyType: StormSpriteType, SpawnRate: 250, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 60},
+		},
+		EndCondition:    EndOnTimer,
+		Duration:        Seconds60,
+		BulletSpeed:     7.5,
+		NextLevel:       GetLevel10,
+		CoinSpawnConfig: CoinSpawnConfig{SpawnRate: 140, RandomY: true},
+	}
+}
+
+func GetLevel10() *LevelConfig {
+	return &LevelConfig{
+		WorldLevel: 10,
+		Name:       "ThunderCloud Ravine: Summit",
+		BackgroundPaths: [4]string{
+			"Levels/Level2/lvl2-1.png",
+			"Levels/Level2/lvl2-2.png",
+			"Levels/Level2/lvl2-3.png",
+			"Levels/Level2/lvl2-4.png",
+		},
+		SpawnConfigs: []SpawnConfig{
+			// Light W2 pressure during the boss fight — W1 fully retired
+			{EnemyType: CloudDrifterType, SpawnRate: 380, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 120},
+			{EnemyType: LightningBugType, SpawnRate: 340, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 120},
+		},
+		EndCondition:    EndOnBossDeath,
+		BossType:        ThunderCrabType,
+		BossHealth:      180,
+		BulletSpeed:     8.0,
+		NextLevel:       nil,
+		CoinSpawnConfig: CoinSpawnConfig{SpawnRate: 120, RandomY: true},
 	}
 }
 

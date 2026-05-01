@@ -194,7 +194,7 @@ func (o *Owlbert) spawnMinions(game *Game) {
 	for i := 0; i < numMinions; i++ {
 		x := float64(100 + i*50)
 		y := 100.0
-		minion := CreateEnemy(FlutternatType, x, y, game.enemyImage, game.podImg)
+		minion := CreateEnemy(FlutternatType, x, y, game.enemyImage, game.podImg, 0, 0)
 		game.enemies = append(game.enemies, minion)
 	}
 }

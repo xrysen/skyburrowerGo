@@ -48,6 +48,10 @@ func LoadAssets() *Assets {
 		ThistleTurretType: loadImage("Assets/Enemies/Thistle Turret/thistle-sheet.png"),
 		SporespinnerType:  loadImage("Assets/Enemies/Sporespinner/sporespinner-sheet.png"),
 		OwlbertType:       loadImage("Assets/Enemies/Owlbert/owlbert.png"),
+		CloudDrifterType:  loadImage("Assets/Enemies/Cloud Drifter/cloudDrifterSprite.png"),
+		LightningBugType:  loadImage("Assets/Enemies/Lightning Bug/lightningBugMaybe.png"),
+		StormSpriteType:   loadImage("Assets/Enemies/Storm Sprite/stormSprite2.png"),
+		ThunderCrabType:   loadImage("Assets/Enemies/ThunderCrab/thunderCrab-sheet.png"),
 	}
 
 	a.PodImg = loadImage("Assets/Enemies/Thistle Turret/pod.png")
