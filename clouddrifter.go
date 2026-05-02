@@ -79,7 +79,7 @@ func (c *CloudDrifter) fireCircularSpread(game *Game) {
 
 func (c *CloudDrifter) Draw(screen *ebiten.Image) {
 	if c.img != nil {
-		frame := (c.frameCounter / 8) % 8
+		frame := (c.frameCounter / 8) % 5
 		sx := frame * 64
 		rect := image.Rect(sx, 0, sx+64, 64)
 		subImg := c.img.SubImage(rect).(*ebiten.Image)

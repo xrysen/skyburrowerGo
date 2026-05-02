@@ -6,6 +6,13 @@ const (
 	CarrotsPerLevel = 5
 )
 
+type WeatherType int
+
+const (
+	WeatherNone WeatherType = iota
+	WeatherRain
+)
+
 type LevelEndCondition int
 
 const (
@@ -47,6 +54,7 @@ type LevelConfig struct {
 	NextLevel       func() *LevelConfig
 	CoinSpawnConfig CoinSpawnConfig
 	BulletSpeed     float64 // base bullet speed for enemies in this level
+	Weather         WeatherType
 }
 
 type CoinSpawnConfig struct {
@@ -128,6 +136,7 @@ func GetLevel6() *LevelConfig {
 		EndCondition:    EndOnTimer,
 		Duration:        Seconds45,
 		BulletSpeed:     6.0,
+		Weather:         WeatherRain,
 		NextLevel:       GetLevel7,
 		CoinSpawnConfig: CoinSpawnConfig{SpawnRate: 180, RandomY: true},
 	}
@@ -155,6 +164,7 @@ func GetLevel7() *LevelConfig {
 		EndCondition:    EndOnTimer,
 		Duration:        Seconds45,
 		BulletSpeed:     6.5,
+		Weather:         WeatherRain,
 		NextLevel:       GetLevel8,
 		CoinSpawnConfig: CoinSpawnConfig{SpawnRate: 180, RandomY: true},
 	}
@@ -181,6 +191,7 @@ func GetLevel8() *LevelConfig {
 		EndCondition:    EndOnTimer,
 		Duration:        Seconds60,
 		BulletSpeed:     7.0,
+		Weather:         WeatherRain,
 		NextLevel:       GetLevel9,
 		CoinSpawnConfig: CoinSpawnConfig{SpawnRate: 160, RandomY: true},
 	}
@@ -205,6 +216,7 @@ func GetLevel9() *LevelConfig {
 		EndCondition:    EndOnTimer,
 		Duration:        Seconds60,
 		BulletSpeed:     7.5,
+		Weather:         WeatherRain,
 		NextLevel:       GetLevel10,
 		CoinSpawnConfig: CoinSpawnConfig{SpawnRate: 140, RandomY: true},
 	}
@@ -229,6 +241,7 @@ func GetLevel10() *LevelConfig {
 		BossType:        ThunderCrabType,
 		BossHealth:      180,
 		BulletSpeed:     8.0,
+		Weather:         WeatherRain,
 		NextLevel:       nil,
 		CoinSpawnConfig: CoinSpawnConfig{SpawnRate: 120, RandomY: true},
 	}

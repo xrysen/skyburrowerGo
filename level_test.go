@@ -75,6 +75,37 @@ func TestGetLevel10_Config(t *testing.T) {
 	}
 }
 
+func TestWeatherType_LevelConfigField(t *testing.T) {
+	cfg := LevelConfig{Weather: WeatherRain}
+	if cfg.Weather != WeatherRain {
+		t.Fatalf("expected WeatherRain, got %v", cfg.Weather)
+	}
+	cfg2 := LevelConfig{}
+	if cfg2.Weather != WeatherNone {
+		t.Fatalf("expected WeatherNone zero value, got %v", cfg2.Weather)
+	}
+}
+
+func TestLevels1To5_WeatherNone(t *testing.T) {
+	getters := []func() *LevelConfig{GetLevel1, GetLevel2, GetLevel3, GetLevel4, GetLevel5}
+	for i, get := range getters {
+		cfg := get()
+		if cfg.Weather != WeatherNone {
+			t.Errorf("level %d: want WeatherNone, got %v", i+1, cfg.Weather)
+		}
+	}
+}
+
+func TestLevels6To10_WeatherRain(t *testing.T) {
+	getters := []func() *LevelConfig{GetLevel6, GetLevel7, GetLevel8, GetLevel9, GetLevel10}
+	for i, get := range getters {
+		cfg := get()
+		if cfg.Weather != WeatherRain {
+			t.Errorf("level %d: want WeatherRain, got %v", i+6, cfg.Weather)
+		}
+	}
+}
+
 func TestGetLevelForWorldSlot_Slots6To10(t *testing.T) {
 	for slot := 6; slot <= 10; slot++ {
 		cfg := GetLevelForWorldSlot(slot)

@@ -647,14 +647,12 @@ func (g *Game) loadLevel(level *LevelConfig) {
 	g.isFading = true
 	g.fadeIn = true
 
-	g.background = &Background{
-		layers: []*Layer{
-			{img: loadImage(level.BackgroundPaths[0]), speed: 0.5},
-			{img: loadImage(level.BackgroundPaths[1]), speed: 1.0},
-			{img: loadImage(level.BackgroundPaths[2]), speed: 1.5},
-			{img: loadImage(level.BackgroundPaths[3]), speed: 4.0},
-		},
-	}
+	g.background = NewBackground([]*Layer{
+		{img: loadImage(level.BackgroundPaths[0]), speed: 0.5},
+		{img: loadImage(level.BackgroundPaths[1]), speed: 1.0},
+		{img: loadImage(level.BackgroundPaths[2]), speed: 1.5},
+		{img: loadImage(level.BackgroundPaths[3]), speed: 4.0},
+	}, level.Weather)
 
 	g.levelCarrots = nil
 	g.carrotSpawnFrames = planCarrotSpawnFrames(level)
@@ -701,10 +699,12 @@ func (g *Game) Draw(screen *ebiten.Image) {
 }
 
 func (g *Game) drawPlaying(screen *ebiten.Image) {
-	// Draw all background layers first
-	for i := 0; i < 4; i++ {
-		g.background.Draw(screen, i)
-	}
+	// Draw farthest sky layer, then lightning flash, then remaining layers
+	g.background.Draw(screen, 0)
+	g.background.DrawLightningFlash(screen)
+	g.background.Draw(screen, 1)
+	g.background.Draw(screen, 2)
+	g.background.Draw(screen, 3)
 
 	for _, c := range g.coins {
 		c.Draw(screen)
@@ -727,6 +727,7 @@ func (g *Game) drawPlaying(screen *ebiten.Image) {
 	}
 
 	g.player.Draw(screen)
+	g.background.DrawRain(screen)
 
 	if g.fadeAlpha > 0 {
 		vector.FillRect(screen, 0, 0, float32(ScreenWidth), float32(ScreenHeight), color.RGBA{0, 0, 0, uint8(g.fadeAlpha * 255)}, false)

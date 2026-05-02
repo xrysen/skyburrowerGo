@@ -85,7 +85,7 @@ func (lb *LightningBug) fireChainBolt(px, py float64, game *Game) {
 
 func (lb *LightningBug) Draw(screen *ebiten.Image) {
 	if lb.img != nil {
-		frame := (lb.frameCounter / 8) % 6
+		frame := (lb.frameCounter / 8) % 5
 		sx := frame * 64
 		rect := image.Rect(sx, 0, sx+64, 64)
 		subImg := lb.img.SubImage(rect).(*ebiten.Image)
