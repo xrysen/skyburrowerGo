@@ -56,6 +56,7 @@ type Game struct {
 	featherImg        *ebiten.Image
 	talonImg          *ebiten.Image
 	boltImg           *ebiten.Image
+	stalactiteImg     *ebiten.Image
 	spawnTimers       map[EnemyType]int
 	spawnCounts       map[EnemyType]int
 	currentLevel      *LevelConfig
@@ -170,6 +171,11 @@ func (g *Game) updatePlaying() {
 		} else if tc, ok := e.(*ThunderCrab); ok {
 			tc.UpdateDeath(g)
 			if ex > -100 && !tc.IsDeathComplete() {
+				activeEnemies = append(activeEnemies, e)
+			}
+		} else if fm, ok := e.(*Foreman); ok {
+			fm.UpdateDeath(g)
+			if ex > -100 && !fm.IsDeathComplete() {
 				activeEnemies = append(activeEnemies, e)
 			}
 		} else {
@@ -766,6 +772,7 @@ func main() {
 		featherImg:           assets.FeatherImg,
 		talonImg:             assets.TalonImg,
 		boltImg:              assets.BoltImg,
+		stalactiteImg:        assets.StalactiteImg,
 		spawnTimers:          make(map[EnemyType]int),
 		spawnCounts:          make(map[EnemyType]int),
 		coinImg:              assets.CoinImg,

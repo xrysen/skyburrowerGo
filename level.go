@@ -109,6 +109,16 @@ func GetLevelForWorldSlot(slot int) *LevelConfig {
 		return GetLevel9()
 	case 10:
 		return GetLevel10()
+	case 11:
+		return GetLevel11()
+	case 12:
+		return GetLevel12()
+	case 13:
+		return GetLevel13()
+	case 14:
+		return GetLevel14()
+	case 15:
+		return GetLevel15()
 	default:
 		return nil
 	}
@@ -129,9 +139,9 @@ func GetLevel6() *LevelConfig {
 			{EnemyType: CloudDrifterType, SpawnRate: 240, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 10},
 			{EnemyType: LightningBugType, SpawnRate: 240, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 120},
 			// Flutternat joins as familiar background and fades out near the end
-			{EnemyType: FlutternatType, SpawnRate: 260, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 300, EndFrame: 2000},
+			{EnemyType: FlutternatType, SpawnRate: 260, RandomY: true, MinSpawns: 1, MaxSpawns: 3, StartFrame: 300, EndFrame: 2000},
 			// Sporespinner brief mid-level cameo
-			{EnemyType: SporespinnerType, SpawnRate: 320, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 600, EndFrame: 2200},
+			{EnemyType: SporespinnerType, SpawnRate: 320, RandomY: true, MinSpawns: 1, MaxSpawns: 2, StartFrame: 600, EndFrame: 2200},
 		},
 		EndCondition:    EndOnTimer,
 		Duration:        Seconds45,
@@ -159,7 +169,7 @@ func GetLevel7() *LevelConfig {
 			{EnemyType: CloudDrifterType, SpawnRate: 300, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 300},
 			{EnemyType: LightningBugType, SpawnRate: 280, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 300},
 			// Flutternat — early cameo, retires at the halfway point
-			{EnemyType: FlutternatType, SpawnRate: 300, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 300, EndFrame: 1350},
+			{EnemyType: FlutternatType, SpawnRate: 300, RandomY: true, MinSpawns: 1, MaxSpawns: 3, StartFrame: 300, EndFrame: 1350},
 		},
 		EndCondition:    EndOnTimer,
 		Duration:        Seconds45,
@@ -181,12 +191,15 @@ func GetLevel8() *LevelConfig {
 			"Levels/Level2/lvl2-4.png",
 		},
 		SpawnConfigs: []SpawnConfig{
-			// All three W2 enemies as equals — W1 fully retired
+			// All three W2 enemies as equals
 			{EnemyType: CloudDrifterType, SpawnRate: 260, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 10},
 			{EnemyType: LightningBugType, SpawnRate: 260, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 10},
 			{EnemyType: StormSpriteType, SpawnRate: 280, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 10},
 			// ThistleTurret mid-level cameo for texture
 			{EnemyType: ThistleTurretType, SpawnRate: 380, RandomY: false, MinSpawns: 1, MaxSpawns: 1, StartFrame: 900, EndFrame: 3300},
+			// W1 enemies return in small swarms before retiring for good
+			{EnemyType: FlutternatType, SpawnRate: 280, RandomY: true, MinSpawns: 2, MaxSpawns: 4, StartFrame: 120, EndFrame: 2400},
+			{EnemyType: SporespinnerType, SpawnRate: 300, RandomY: true, MinSpawns: 1, MaxSpawns: 3, StartFrame: 300, EndFrame: 2400},
 		},
 		EndCondition:    EndOnTimer,
 		Duration:        Seconds60,
@@ -242,7 +255,7 @@ func GetLevel10() *LevelConfig {
 		BossHealth:      180,
 		BulletSpeed:     8.0,
 		Weather:         WeatherRain,
-		NextLevel:       nil,
+		NextLevel:       GetLevel11,
 		CoinSpawnConfig: CoinSpawnConfig{SpawnRate: 120, RandomY: true},
 	}
 }
@@ -321,6 +334,125 @@ func GetLevel4() *LevelConfig {
 			SpawnRate: 120,
 			RandomY:   true,
 		},
+	}
+}
+
+const (
+	Seconds50 = 50 * FPS
+	Seconds55 = 55 * FPS
+)
+
+func GetLevel11() *LevelConfig {
+	return &LevelConfig{
+		WorldLevel: 11,
+		Name:       "The Mine",
+		BackgroundPaths: [4]string{
+			"Levels/Level3/lay1.png",
+			"Levels/Level3/lay2.png",
+			"Levels/Level3/lay3.png",
+			"Levels/Level3/lay4.png",
+		},
+		SpawnConfigs: []SpawnConfig{
+			{EnemyType: DarkWingType, SpawnRate: 220, RandomY: true, MinSpawns: 1, MaxSpawns: 2, StartFrame: 60},
+			{EnemyType: CloudDrifterType, SpawnRate: 300, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 60, EndFrame: 1350},
+			{EnemyType: LightningBugType, SpawnRate: 320, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 120, EndFrame: 1350},
+		},
+		EndCondition:    EndOnTimer,
+		Duration:        Seconds45,
+		BulletSpeed:     9.0,
+		NextLevel:       GetLevel12,
+		CoinSpawnConfig: CoinSpawnConfig{SpawnRate: 160, RandomY: true},
+	}
+}
+
+func GetLevel12() *LevelConfig {
+	return &LevelConfig{
+		WorldLevel: 12,
+		Name:       "The Mine",
+		BackgroundPaths: [4]string{
+			"Levels/Level3/lay1.png",
+			"Levels/Level3/lay2.png",
+			"Levels/Level3/lay3.png",
+			"Levels/Level3/lay4.png",
+		},
+		SpawnConfigs: []SpawnConfig{
+			{EnemyType: DarkWingType, SpawnRate: 200, RandomY: true, MinSpawns: 1, MaxSpawns: 2, StartFrame: 60},
+			{EnemyType: DynamiteBeetleType, SpawnRate: 280, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 300},
+		},
+		EndCondition:    EndOnTimer,
+		Duration:        Seconds50,
+		BulletSpeed:     9.5,
+		NextLevel:       GetLevel13,
+		CoinSpawnConfig: CoinSpawnConfig{SpawnRate: 150, RandomY: true},
+	}
+}
+
+func GetLevel13() *LevelConfig {
+	return &LevelConfig{
+		WorldLevel: 13,
+		Name:       "The Mine",
+		BackgroundPaths: [4]string{
+			"Levels/Level3/lay1.png",
+			"Levels/Level3/lay2.png",
+			"Levels/Level3/lay3.png",
+			"Levels/Level3/lay4.png",
+		},
+		SpawnConfigs: []SpawnConfig{
+			{EnemyType: DarkWingType, SpawnRate: 180, RandomY: true, MinSpawns: 1, MaxSpawns: 2, StartFrame: 60},
+			{EnemyType: DynamiteBeetleType, SpawnRate: 260, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 120},
+			{EnemyType: DrillDroneType, SpawnRate: 300, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 300},
+		},
+		EndCondition:    EndOnTimer,
+		Duration:        Seconds55,
+		BulletSpeed:     10.0,
+		NextLevel:       GetLevel14,
+		CoinSpawnConfig: CoinSpawnConfig{SpawnRate: 140, RandomY: true},
+	}
+}
+
+func GetLevel14() *LevelConfig {
+	return &LevelConfig{
+		WorldLevel: 14,
+		Name:       "Mine Gauntlet",
+		BackgroundPaths: [4]string{
+			"Levels/Level3/lay1.png",
+			"Levels/Level3/lay2.png",
+			"Levels/Level3/lay3.png",
+			"Levels/Level3/lay4.png",
+		},
+		SpawnConfigs: []SpawnConfig{
+			{EnemyType: DarkWingType, SpawnRate: 160, RandomY: true, MinSpawns: 1, MaxSpawns: 2, StartFrame: 60},
+			{EnemyType: DynamiteBeetleType, SpawnRate: 220, RandomY: true, MinSpawns: 1, MaxSpawns: 2, StartFrame: 60},
+			{EnemyType: DrillDroneType, SpawnRate: 240, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 60},
+		},
+		EndCondition:    EndOnTimer,
+		Duration:        Seconds60,
+		BulletSpeed:     10.5,
+		NextLevel:       GetLevel15,
+		CoinSpawnConfig: CoinSpawnConfig{SpawnRate: 120, RandomY: true},
+	}
+}
+
+func GetLevel15() *LevelConfig {
+	return &LevelConfig{
+		WorldLevel: 15,
+		Name:       "The Foreman's Lair",
+		BackgroundPaths: [4]string{
+			"Levels/Level3/lay1.png",
+			"Levels/Level3/lay2.png",
+			"Levels/Level3/lay3.png",
+			"Levels/Level3/lay4.png",
+		},
+		SpawnConfigs: []SpawnConfig{
+			{EnemyType: DarkWingType, SpawnRate: 300, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 120},
+			{EnemyType: DynamiteBeetleType, SpawnRate: 400, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 300},
+		},
+		EndCondition:    EndOnBossDeath,
+		BossType:        ForemanType,
+		BossHealth:      200,
+		BulletSpeed:     11.0,
+		NextLevel:       nil,
+		CoinSpawnConfig: CoinSpawnConfig{SpawnRate: 150, RandomY: true},
 	}
 }
 

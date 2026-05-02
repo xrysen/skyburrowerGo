@@ -55,6 +55,18 @@ func CreateEnemy(enemyType EnemyType, x, y float64, image map[EnemyType]*ebiten.
 			health = 180
 		}
 		return NewThunderCrab(x, y, health, bulletSpeed, image[ThunderCrabType])
+	case DarkWingType:
+		return NewDarkWing(x, y, image[DarkWingType])
+	case DynamiteBeetleType:
+		return NewDynamiteBeetle(x, y, image[DynamiteBeetleType])
+	case DrillDroneType:
+		return NewDrillDrone(x, y, image[DrillDroneType])
+	case ForemanType:
+		health := bossHealth
+		if health <= 0 {
+			health = 200
+		}
+		return NewForeman(x, y, health, image[ForemanType])
 	}
 	return nil
 }
