@@ -115,7 +115,7 @@ func (f *Foreman) fireDrillSalvo(px, py float64, game *Game, count int) {
 		angle := baseAngle + spread*(float64(i)-half)
 		vx := math.Cos(angle) * speed
 		vy := math.Sin(angle) * speed
-		game.enemyBullets = append(game.enemyBullets, NewDrillBit(cx, cy, vx, vy))
+		game.enemyBullets = append(game.enemyBullets, NewDrillBit(cx, cy, vx, vy, game.drillBitImg))
 	}
 }
 

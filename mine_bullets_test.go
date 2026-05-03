@@ -10,7 +10,7 @@ var (
 // --- DrillBit ---
 
 func TestDrillBit_MovesOnUpdate(t *testing.T) {
-	b := NewDrillBit(100, 100, -2.0, 0.0)
+	b := NewDrillBit(100, 100, -2.0, 0.0, nil)
 	x0, y0 := b.GetPosition()
 	b.Update()
 	x1, y1 := b.GetPosition()
@@ -23,7 +23,7 @@ func TestDrillBit_MovesOnUpdate(t *testing.T) {
 }
 
 func TestDrillBit_HighDamage(t *testing.T) {
-	b := NewDrillBit(100, 100, -2.0, 0.0)
+	b := NewDrillBit(100, 100, -2.0, 0.0, nil)
 	if b.GetDamage() != 3 {
 		t.Errorf("want damage 3 (high), got %d", b.GetDamage())
 	}

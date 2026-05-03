@@ -57,6 +57,7 @@ type Game struct {
 	talonImg          *ebiten.Image
 	boltImg           *ebiten.Image
 	stalactiteImg     *ebiten.Image
+	drillBitImg       *ebiten.Image
 	spawnTimers       map[EnemyType]int
 	spawnCounts       map[EnemyType]int
 	currentLevel      *LevelConfig
@@ -773,6 +774,7 @@ func main() {
 		talonImg:             assets.TalonImg,
 		boltImg:              assets.BoltImg,
 		stalactiteImg:        assets.StalactiteImg,
+		drillBitImg:          assets.DrillBitImg,
 		spawnTimers:          make(map[EnemyType]int),
 		spawnCounts:          make(map[EnemyType]int),
 		coinImg:              assets.CoinImg,

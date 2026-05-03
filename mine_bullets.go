@@ -8,15 +8,18 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
-// DrillBit is a slow, heavy projectile drawn as a small rotated rectangle.
+// DrillBit is a slow, heavy projectile fired toward the player.
 type DrillBit struct {
 	x, y   float64
 	vx, vy float64
 	angle  float64
+	img    *ebiten.Image
 }
 
-func NewDrillBit(x, y, vx, vy float64) *DrillBit {
-	return &DrillBit{x: x, y: y, vx: vx, vy: vy, angle: math.Atan2(vy, vx)}
+const drillBitScale = 0.35 // 48px → ~17px on screen
+
+func NewDrillBit(x, y, vx, vy float64, img *ebiten.Image) *DrillBit {
+	return &DrillBit{x: x, y: y, vx: vx, vy: vy, angle: math.Atan2(vy, vx), img: img}
 }
 
 func (b *DrillBit) Update() {
@@ -25,18 +28,19 @@ func (b *DrillBit) Update() {
 }
 
 func (b *DrillBit) Draw(screen *ebiten.Image) {
-	img := ebiten.NewImage(8, 4)
-	img.Fill(color.RGBA{80, 80, 90, 255})
+	const size = 48.0
 	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(-4, -2)
-	op.GeoM.Rotate(b.angle)
+	// image points up; rotate so it points in travel direction
+	op.GeoM.Translate(-size/2, -size/2)
+	op.GeoM.Rotate(b.angle + math.Pi/2)
+	op.GeoM.Scale(drillBitScale, drillBitScale)
 	op.GeoM.Translate(b.x, b.y)
-	screen.DrawImage(img, op)
+	screen.DrawImage(b.img, op)
 }
 
 func (b *DrillBit) GetPosition() (float64, float64) { return b.x, b.y }
 func (b *DrillBit) GetDamage() int                  { return 3 }
-func (b *DrillBit) GetBounds() (float64, float64)   { return 8, 4 }
+func (b *DrillBit) GetBounds() (float64, float64)   { return 16, 16 }
 
 // FuseSpark is a medium-speed projectile drawn as a small orange circle.
 type FuseSpark struct {

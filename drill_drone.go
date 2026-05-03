@@ -77,7 +77,7 @@ func (d *DrillDrone) Update(px, py float64, game *Game) {
 		speed := 2.5
 		vx := dx / dist * speed
 		vy := dy / dist * speed
-		game.enemyBullets = append(game.enemyBullets, NewDrillBit(d.x+16, d.y+16, vx, vy))
+		game.enemyBullets = append(game.enemyBullets, NewDrillBit(d.x+16, d.y+16, vx, vy, game.drillBitImg))
 	}
 }
 

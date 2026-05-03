@@ -117,7 +117,7 @@ func TestForeman_StalactiteStartsAtTopOfScreen(t *testing.T) {
 }
 
 func TestForeman_StalactiteFallsDown(t *testing.T) {
-	s := NewStalactite(320, 0)
+	s := NewStalactite(320, 0, nil)
 	_, y0 := s.GetPosition()
 	s.Update()
 	_, y1 := s.GetPosition()
@@ -127,7 +127,7 @@ func TestForeman_StalactiteFallsDown(t *testing.T) {
 }
 
 func TestForeman_StalactiteDamage(t *testing.T) {
-	s := NewStalactite(320, 0)
+	s := NewStalactite(320, 0, nil)
 	if s.GetDamage() <= 0 {
 		t.Errorf("stalactite damage should be positive, got %d", s.GetDamage())
 	}
