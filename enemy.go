@@ -67,6 +67,18 @@ func CreateEnemy(enemyType EnemyType, x, y float64, image map[EnemyType]*ebiten.
 			health = 200
 		}
 		return NewForeman(x, y, health, image[ForemanType])
+	case WraithWhispType:
+		return NewWraithWhisp(x, y, image[WraithWhispType])
+	case BlightmothType:
+		return NewBlightmoth(x, y, image[BlightmothType])
+	case HollowStagType:
+		return NewHollowStag(x, y, image[HollowStagType])
+	case HeartwoodType:
+		health := bossHealth
+		if health <= 0 {
+			health = 300
+		}
+		return NewHeartwood(x, y, health, image[HeartwoodType])
 	}
 	return nil
 }

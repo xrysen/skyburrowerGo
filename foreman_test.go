@@ -33,7 +33,9 @@ func TestForeman_YBobAmplitude(t *testing.T) {
 	f := NewForeman(560, 160, 200, nil)
 	g := &Game{}
 	minY, maxY := 160.0, 160.0
-	for i := 0; i < 360; i++ {
+	// 150 frames: enough for one full sine cycle (period=120) but before
+	// repoTimer fires at frame 180, which would add random vertical drift.
+	for i := 0; i < 150; i++ {
 		f.Update(100, 160, g)
 		_, y := f.GetPosition()
 		if y < minY {
@@ -228,10 +230,12 @@ func TestForeman_Phase2TriggersAtHalfHP(t *testing.T) {
 
 func TestForeman_UpdateDeathAndIsDeathComplete(t *testing.T) {
 	f := NewForeman(560, 160, 5, nil)
-	g := &Game{}
+	g := &Game{player: &Player{}}
 	f.TakeDamage(5)
 	// Death animation completes after enough UpdateDeath calls
+	// The game loop calls Update (which increments deathTimer) then UpdateDeath.
 	for i := 0; i < 500; i++ {
+		f.Update(100, 160, g)
 		f.UpdateDeath(g)
 	}
 	if !f.IsDeathComplete() {

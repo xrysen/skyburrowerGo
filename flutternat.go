@@ -3,6 +3,7 @@ package main
 import (
 	"image"
 	"image/color"
+	"math/rand/v2"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
@@ -89,11 +90,13 @@ func (f *Flutternat) IsDead() bool {
 }
 
 func (f *Flutternat) OnDeath(game *Game) {
-	size := SmallCoin
-	if ShouldSpawnBigCoin(game.player.luck, 1) {
-		size = BigCoin
+	numCoins := 2 + rand.IntN(2)
+	for i := 0; i < numCoins; i++ {
+		size := SmallCoin
+		if ShouldSpawnBigCoin(game.player.luck, 1) {
+			size = BigCoin
+		}
+		coin := NewCoin(f.x+float64(i*8), f.y, size, game.coinImg)
+		game.coins = append(game.coins, coin)
 	}
-	coin := NewCoin(f.x, f.y, size, game.coinImg)
-	game.coins = append(game.coins, coin)
-	// TODO: if boss, set bossKilled to true
 }

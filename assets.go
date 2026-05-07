@@ -63,6 +63,10 @@ func LoadAssets() *Assets {
 		DynamiteBeetleType: loadImage("Assets/Enemies/Dynamite Beetle/dynamitebeetle.png"),
 		DrillDroneType:     loadImage("Assets/Enemies/Drill Drone/drilldrone.png"),
 		ForemanType:        loadImage("Assets/Enemies/The Foreman/foreman.png"),
+		WraithWhispType:    loadImage("Assets/Enemies/Wraith Whisp/wraithwhisp.png"),
+		BlightmothType:     loadImage("Assets/Enemies/Blightmoth/blightmoth.png"),
+		HollowStagType:     loadImage("Assets/Enemies/Hollow Stag/hollowstag.png"),
+		HeartwoodType:      loadImage("Assets/Enemies/Heartwood/heartwood.png"),
 	}
 
 	a.PodImg = loadImage("Assets/Enemies/Thistle Turret/pod.png")

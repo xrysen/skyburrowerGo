@@ -4,6 +4,7 @@ import (
 	"image"
 	"image/color"
 	"math"
+	"math/rand/v2"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
@@ -120,10 +121,13 @@ func (d *DrillDrone) TakeDamage(amount int) {
 }
 func (d *DrillDrone) IsDead() bool { return d.health <= 0 }
 func (d *DrillDrone) OnDeath(game *Game) {
-	size := BigCoin
-	if game.player != nil && !ShouldSpawnBigCoin(game.player.luck, 1) {
-		size = SmallCoin
+	numCoins := 3 + rand.IntN(2)
+	for i := 0; i < numCoins; i++ {
+		size := BigCoin
+		if game.player != nil && !ShouldSpawnBigCoin(game.player.luck, 1) {
+			size = SmallCoin
+		}
+		coin := NewCoin(d.x+float64(i*8), d.y, size, game.coinImg)
+		game.coins = append(game.coins, coin)
 	}
-	coin := NewCoin(d.x, d.y, size, game.coinImg)
-	game.coins = append(game.coins, coin)
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"image"
 	"image/color"
+	"math/rand/v2"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
@@ -102,10 +103,13 @@ func (d *DynamiteBeetle) OnDeath(game *Game) {
 		game.enemyBullets = append(game.enemyBullets, NewFuseSpark(cx, cy, dir[0], dir[1]))
 	}
 
-	size := SmallCoin
-	if game.player != nil && ShouldSpawnBigCoin(game.player.luck, 1) {
-		size = BigCoin
+	numCoins := 2 + rand.IntN(2)
+	for i := 0; i < numCoins; i++ {
+		size := SmallCoin
+		if game.player != nil && ShouldSpawnBigCoin(game.player.luck, 1) {
+			size = BigCoin
+		}
+		coin := NewCoin(d.x+float64(i*8), d.y, size, game.coinImg)
+		game.coins = append(game.coins, coin)
 	}
-	coin := NewCoin(d.x, d.y, size, game.coinImg)
-	game.coins = append(game.coins, coin)
 }

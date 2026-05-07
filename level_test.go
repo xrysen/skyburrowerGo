@@ -263,8 +263,11 @@ func TestGetLevel15_Config(t *testing.T) {
 	if len(cfg.SpawnConfigs) == 0 {
 		t.Error("Level15 should have light mine enemy pressure during boss fight")
 	}
-	if cfg.NextLevel != nil {
-		t.Error("Level15 NextLevel should be nil (end of world)")
+	if cfg.NextLevel == nil {
+		t.Fatal("Level15 NextLevel should point to Level16")
+	}
+	if cfg.NextLevel().WorldLevel != 16 {
+		t.Errorf("Level15 NextLevel: want WorldLevel 16, got %d", cfg.NextLevel().WorldLevel)
 	}
 }
 
@@ -316,5 +319,276 @@ func TestGetLevelForWorldSlot_Slots11To15(t *testing.T) {
 		if cfg.WorldLevel != slot {
 			t.Errorf("slot %d: WorldLevel want %d, got %d", slot, slot, cfg.WorldLevel)
 		}
+	}
+}
+
+func TestLevels1To15_NoStaticBackground(t *testing.T) {
+	getters := []func() *LevelConfig{
+		GetLevel1, GetLevel2, GetLevel3, GetLevel4, GetLevel5,
+		GetLevel6, GetLevel7, GetLevel8, GetLevel9, GetLevel10,
+		GetLevel11, GetLevel12, GetLevel13, GetLevel14, GetLevel15,
+	}
+	for i, get := range getters {
+		cfg := get()
+		if cfg.StaticBackgroundPath != "" {
+			t.Errorf("level %d: expected empty StaticBackgroundPath, got %q", i+1, cfg.StaticBackgroundPath)
+		}
+	}
+}
+
+func TestLevelConfig_StaticBackgroundPathField(t *testing.T) {
+	cfg := LevelConfig{StaticBackgroundPath: "Levels/Level4/lvl4-moon.png"}
+	if cfg.StaticBackgroundPath != "Levels/Level4/lvl4-moon.png" {
+		t.Fatalf("expected path set, got %q", cfg.StaticBackgroundPath)
+	}
+	empty := LevelConfig{}
+	if empty.StaticBackgroundPath != "" {
+		t.Fatalf("expected empty string zero value, got %q", empty.StaticBackgroundPath)
+	}
+}
+
+const level4BgPrefix = "Levels/Level4/"
+
+func TestGetLevel16_Config(t *testing.T) {
+	cfg := GetLevel16()
+	if cfg.WorldLevel != 16 {
+		t.Errorf("WorldLevel: want 16, got %d", cfg.WorldLevel)
+	}
+	for i, p := range cfg.BackgroundPaths {
+		if len(p) < len(level4BgPrefix) || p[:len(level4BgPrefix)] != level4BgPrefix {
+			t.Errorf("BackgroundPaths[%d] = %q, want Level4 asset", i, p)
+		}
+	}
+	if cfg.StaticBackgroundPath != "Levels/Level4/lvl4-moon.png" {
+		t.Errorf("StaticBackgroundPath: want moon path, got %q", cfg.StaticBackgroundPath)
+	}
+	if cfg.EndCondition != EndOnTimer {
+		t.Errorf("EndCondition: want EndOnTimer, got %v", cfg.EndCondition)
+	}
+	if !hasSpawnType(cfg.SpawnConfigs, BlightmothType) {
+		t.Error("Level16 should spawn BlightmothType")
+	}
+}
+
+func TestGetLevel15_NextLevelIsLevel16(t *testing.T) {
+	cfg := GetLevel15()
+	if cfg.NextLevel == nil {
+		t.Fatal("Level15 NextLevel should point to Level16")
+	}
+	if cfg.NextLevel().WorldLevel != 16 {
+		t.Errorf("Level15 NextLevel: want WorldLevel 16, got %d", cfg.NextLevel().WorldLevel)
+	}
+}
+
+func TestGetLevelForWorldSlot_16(t *testing.T) {
+	cfg := GetLevelForWorldSlot(16)
+	if cfg == nil {
+		t.Fatal("GetLevelForWorldSlot(16) returned nil")
+	}
+	if cfg.WorldLevel != 16 {
+		t.Errorf("slot 16: WorldLevel want 16, got %d", cfg.WorldLevel)
+	}
+}
+
+func TestGetLevel17_Config(t *testing.T) {
+	cfg := GetLevel17()
+	if cfg.WorldLevel != 17 {
+		t.Errorf("WorldLevel: want 17, got %d", cfg.WorldLevel)
+	}
+	for i, p := range cfg.BackgroundPaths {
+		if len(p) < len(level4BgPrefix) || p[:len(level4BgPrefix)] != level4BgPrefix {
+			t.Errorf("BackgroundPaths[%d] = %q, want Level4 asset", i, p)
+		}
+	}
+	if cfg.StaticBackgroundPath != "Levels/Level4/lvl4-moon.png" {
+		t.Errorf("StaticBackgroundPath: want moon path, got %q", cfg.StaticBackgroundPath)
+	}
+	if cfg.EndCondition != EndOnTimer {
+		t.Errorf("EndCondition: want EndOnTimer, got %v", cfg.EndCondition)
+	}
+	if !hasSpawnType(cfg.SpawnConfigs, HollowStagType) {
+		t.Error("Level17 should spawn HollowStagType")
+	}
+}
+
+func TestGetLevel16_NextLevelIsLevel17(t *testing.T) {
+	cfg := GetLevel16()
+	if cfg.NextLevel == nil {
+		t.Fatal("Level16 NextLevel should point to Level17")
+	}
+	if cfg.NextLevel().WorldLevel != 17 {
+		t.Errorf("Level16 NextLevel: want WorldLevel 17, got %d", cfg.NextLevel().WorldLevel)
+	}
+}
+
+func TestGetLevelForWorldSlot_17(t *testing.T) {
+	cfg := GetLevelForWorldSlot(17)
+	if cfg == nil {
+		t.Fatal("GetLevelForWorldSlot(17) returned nil")
+	}
+	if cfg.WorldLevel != 17 {
+		t.Errorf("slot 17: WorldLevel want 17, got %d", cfg.WorldLevel)
+	}
+}
+
+func spawnRate(cfgs []SpawnConfig, et EnemyType) int {
+	for _, c := range cfgs {
+		if c.EnemyType == et {
+			return c.SpawnRate
+		}
+	}
+	return 0
+}
+
+func TestGetLevel18_SpawnConfigs(t *testing.T) {
+	cfg := GetLevel18()
+	if !hasSpawnType(cfg.SpawnConfigs, BlightmothType) {
+		t.Error("Level18 should spawn Blightmoth")
+	}
+	if !hasSpawnType(cfg.SpawnConfigs, HollowStagType) {
+		t.Error("Level18 should spawn HollowStag")
+	}
+	// Higher density = lower spawn rate than intro levels (L16: 220, L17: 240)
+	if r := spawnRate(cfg.SpawnConfigs, BlightmothType); r >= 220 {
+		t.Errorf("Level18 Blightmoth spawn rate %d should be higher density than Level16 (rate 220)", r)
+	}
+	if r := spawnRate(cfg.SpawnConfigs, HollowStagType); r >= 240 {
+		t.Errorf("Level18 HollowStag spawn rate %d should be higher density than Level17 (rate 240)", r)
+	}
+}
+
+func TestGetLevelForWorldSlot_18And19(t *testing.T) {
+	for _, slot := range []int{18, 19} {
+		cfg := GetLevelForWorldSlot(slot)
+		if cfg == nil {
+			t.Errorf("GetLevelForWorldSlot(%d) returned nil", slot)
+			continue
+		}
+		if cfg.WorldLevel != slot {
+			t.Errorf("slot %d: WorldLevel want %d, got %d", slot, slot, cfg.WorldLevel)
+		}
+	}
+}
+
+func TestGetLevel19_SpawnConfigs(t *testing.T) {
+	cfg := GetLevel19()
+	if !hasSpawnType(cfg.SpawnConfigs, BlightmothType) {
+		t.Error("Level19 should spawn Blightmoth")
+	}
+	if !hasSpawnType(cfg.SpawnConfigs, HollowStagType) {
+		t.Error("Level19 should spawn HollowStag")
+	}
+	if !hasSpawnType(cfg.SpawnConfigs, WraithWhispType) {
+		t.Error("Level19 should spawn WraithWhisp")
+	}
+	// Higher density than Level18 (Blightmoth: 180, HollowStag: 200)
+	if r := spawnRate(cfg.SpawnConfigs, BlightmothType); r >= 180 {
+		t.Errorf("Level19 Blightmoth spawn rate %d should be higher density than Level18 (rate 180)", r)
+	}
+	if r := spawnRate(cfg.SpawnConfigs, HollowStagType); r >= 200 {
+		t.Errorf("Level19 HollowStag spawn rate %d should be higher density than Level18 (rate 200)", r)
+	}
+}
+
+func TestGetLevel19_BasicConfig(t *testing.T) {
+	cfg := GetLevel19()
+	if cfg.WorldLevel != 19 {
+		t.Errorf("WorldLevel: want 19, got %d", cfg.WorldLevel)
+	}
+	for i, p := range cfg.BackgroundPaths {
+		if len(p) < len(level4BgPrefix) || p[:len(level4BgPrefix)] != level4BgPrefix {
+			t.Errorf("BackgroundPaths[%d] = %q, want Level4 asset", i, p)
+		}
+	}
+	if cfg.StaticBackgroundPath != "Levels/Level4/lvl4-moon.png" {
+		t.Errorf("StaticBackgroundPath: want moon path, got %q", cfg.StaticBackgroundPath)
+	}
+	if cfg.EndCondition != EndOnTimer {
+		t.Errorf("EndCondition: want EndOnTimer, got %v", cfg.EndCondition)
+	}
+}
+
+func TestGetLevel18_NextLevelIsLevel19(t *testing.T) {
+	cfg := GetLevel18()
+	if cfg.NextLevel == nil {
+		t.Fatal("Level18 NextLevel should point to Level19")
+	}
+	if cfg.NextLevel().WorldLevel != 19 {
+		t.Errorf("Level18 NextLevel: want WorldLevel 19, got %d", cfg.NextLevel().WorldLevel)
+	}
+}
+
+func TestGetLevel17_NextLevelIsLevel18(t *testing.T) {
+	cfg := GetLevel17()
+	if cfg.NextLevel == nil {
+		t.Fatal("Level17 NextLevel should point to Level18")
+	}
+	if cfg.NextLevel().WorldLevel != 18 {
+		t.Errorf("Level17 NextLevel: want WorldLevel 18, got %d", cfg.NextLevel().WorldLevel)
+	}
+}
+
+func TestGetLevel18_BasicConfig(t *testing.T) {
+	cfg := GetLevel18()
+	if cfg.WorldLevel != 18 {
+		t.Errorf("WorldLevel: want 18, got %d", cfg.WorldLevel)
+	}
+	for i, p := range cfg.BackgroundPaths {
+		if len(p) < len(level4BgPrefix) || p[:len(level4BgPrefix)] != level4BgPrefix {
+			t.Errorf("BackgroundPaths[%d] = %q, want Level4 asset", i, p)
+		}
+	}
+	if cfg.StaticBackgroundPath != "Levels/Level4/lvl4-moon.png" {
+		t.Errorf("StaticBackgroundPath: want moon path, got %q", cfg.StaticBackgroundPath)
+	}
+	if cfg.EndCondition != EndOnTimer {
+		t.Errorf("EndCondition: want EndOnTimer, got %v", cfg.EndCondition)
+	}
+}
+
+func TestGetLevelForWorldSlot_20(t *testing.T) {
+	cfg := GetLevelForWorldSlot(20)
+	if cfg == nil {
+		t.Fatal("GetLevelForWorldSlot(20) returned nil")
+	}
+	if cfg.WorldLevel != 20 {
+		t.Errorf("slot 20: WorldLevel want 20, got %d", cfg.WorldLevel)
+	}
+}
+
+func TestGetLevel19_NextLevelIsLevel20(t *testing.T) {
+	cfg := GetLevel19()
+	if cfg.NextLevel == nil {
+		t.Fatal("Level19 NextLevel should point to Level20")
+	}
+	if cfg.NextLevel().WorldLevel != 20 {
+		t.Errorf("Level19 NextLevel: want WorldLevel 20, got %d", cfg.NextLevel().WorldLevel)
+	}
+}
+
+func TestGetLevel20_Config(t *testing.T) {
+	cfg := GetLevel20()
+	if cfg.WorldLevel != 20 {
+		t.Errorf("WorldLevel: want 20, got %d", cfg.WorldLevel)
+	}
+	if cfg.EndCondition != EndOnBossDeath {
+		t.Errorf("EndCondition: want EndOnBossDeath, got %v", cfg.EndCondition)
+	}
+	if cfg.BossType != HeartwoodType {
+		t.Errorf("BossType: want HeartwoodType, got %v", cfg.BossType)
+	}
+	if len(cfg.SpawnConfigs) != 0 {
+		t.Errorf("SpawnConfigs: want empty, got %d entries", len(cfg.SpawnConfigs))
+	}
+	for i, p := range cfg.BackgroundPaths {
+		if len(p) < len(level4BgPrefix) || p[:len(level4BgPrefix)] != level4BgPrefix {
+			t.Errorf("BackgroundPaths[%d] = %q, want Level4 asset", i, p)
+		}
+	}
+	if cfg.StaticBackgroundPath != "Levels/Level4/lvl4-moon.png" {
+		t.Errorf("StaticBackgroundPath: want moon path, got %q", cfg.StaticBackgroundPath)
+	}
+	if cfg.NextLevel != nil {
+		t.Error("Level20 NextLevel should be nil (final level)")
 	}
 }

@@ -46,6 +46,7 @@ type Game struct {
 	worldMap          *WorldMap
 	player            *Player
 	background        *Background
+	staticBackground  *ebiten.Image
 	bullets           []Bullet
 	bulletImg         *ebiten.Image
 	enemyBullets      []Bullet
@@ -179,6 +180,11 @@ func (g *Game) updatePlaying() {
 			if ex > -100 && !fm.IsDeathComplete() {
 				activeEnemies = append(activeEnemies, e)
 			}
+		} else if hw, ok := e.(*Heartwood); ok {
+			hw.UpdateDeath(g)
+			if ex > -100 && !hw.IsDeathComplete() {
+				activeEnemies = append(activeEnemies, e)
+			}
 		} else {
 			// Regular enemy cleanup
 			if ex > -100 && !e.IsDead() {
@@ -248,16 +254,16 @@ func (g *Game) updatePlaying() {
 		}
 
 		g.coinSpawnTimer++
-		spawnRate := 120 - (g.player.luck * 10)
-		if spawnRate < 50 {
-			spawnRate = 50
+		spawnRate := 100 - (g.player.luck * 8)
+		if spawnRate < 40 {
+			spawnRate = 40
 		}
 		if g.coinSpawnTimer >= spawnRate {
 			g.coinSpawnTimer = 0
 
-			maxCoins := 2 + (g.player.luck / 2)
-			if maxCoins > 5 {
-				maxCoins = 5 // Cap at 5 coins
+			maxCoins := 3 + (g.player.luck / 2)
+			if maxCoins > 6 {
+				maxCoins = 6
 			}
 
 			numCoins := 1 + rand.IntN(maxCoins)
@@ -644,7 +650,14 @@ func (g *Game) loadLevel(level *LevelConfig) {
 
 	// Spawn boss if this level has one
 	if level.BossType != "" {
-		boss := CreateEnemy(level.BossType, 550, 200, g.enemyImage, g.podImg, level.BulletSpeed, level.BossHealth)
+		bx, by := level.BossX, level.BossY
+		if bx == 0 {
+			bx = 550
+		}
+		if by == 0 {
+			by = 200
+		}
+		boss := CreateEnemy(level.BossType, bx, by, g.enemyImage, g.podImg, level.BulletSpeed, level.BossHealth)
 		g.enemies = append(g.enemies, boss)
 	}
 
@@ -654,12 +667,25 @@ func (g *Game) loadLevel(level *LevelConfig) {
 	g.isFading = true
 	g.fadeIn = true
 
-	g.background = NewBackground([]*Layer{
+	if level.StaticBackgroundPath != "" {
+		g.staticBackground = loadImage(level.StaticBackgroundPath)
+	} else {
+		g.staticBackground = nil
+	}
+
+	bg := NewBackground([]*Layer{
 		{img: loadImage(level.BackgroundPaths[0]), speed: 0.5},
 		{img: loadImage(level.BackgroundPaths[1]), speed: 1.0},
 		{img: loadImage(level.BackgroundPaths[2]), speed: 1.5},
 		{img: loadImage(level.BackgroundPaths[3]), speed: 4.0},
 	}, level.Weather)
+	if level.ExtraLayerPath != "" {
+		bg.layers = append(bg.layers, &Layer{img: loadImage(level.ExtraLayerPath), speed: 5.0})
+	}
+	if level.ForegroundPath != "" {
+		bg.foreground = &Layer{img: loadImage(level.ForegroundPath), speed: 6.0}
+	}
+	g.background = bg
 
 	g.levelCarrots = nil
 	g.carrotSpawnFrames = planCarrotSpawnFrames(level)
@@ -706,12 +732,15 @@ func (g *Game) Draw(screen *ebiten.Image) {
 }
 
 func (g *Game) drawPlaying(screen *ebiten.Image) {
-	// Draw farthest sky layer, then lightning flash, then remaining layers
+	// Draw farthest sky layer, then static background (moon etc) over it, then lightning flash, then remaining layers
 	g.background.Draw(screen, 0)
+	if g.staticBackground != nil {
+		screen.DrawImage(g.staticBackground, nil)
+	}
 	g.background.DrawLightningFlash(screen)
-	g.background.Draw(screen, 1)
-	g.background.Draw(screen, 2)
-	g.background.Draw(screen, 3)
+	for i := 1; i < len(g.background.layers); i++ {
+		g.background.Draw(screen, i)
+	}
 
 	for _, c := range g.coins {
 		c.Draw(screen)
@@ -734,6 +763,7 @@ func (g *Game) drawPlaying(screen *ebiten.Image) {
 	}
 
 	g.player.Draw(screen)
+	g.background.DrawForeground(screen)
 	g.background.DrawRain(screen)
 
 	if g.fadeAlpha > 0 {

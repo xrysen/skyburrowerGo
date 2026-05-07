@@ -22,6 +22,7 @@ type rainDrop struct {
 
 type Background struct {
 	layers          []*Layer
+	foreground      *Layer
 	weather         WeatherType
 	drops           []rainDrop
 	lightningTimer  int
@@ -56,6 +57,13 @@ func (b *Background) Update() {
 		w := float64(l.img.Bounds().Dx())
 		if l.x < -w {
 			l.x = 0
+		}
+	}
+	if b.foreground != nil {
+		b.foreground.x -= b.foreground.speed
+		w := float64(b.foreground.img.Bounds().Dx())
+		if b.foreground.x < -w {
+			b.foreground.x = 0
 		}
 	}
 	for i := range b.drops {
@@ -133,6 +141,20 @@ func (b *Background) DrawRain(screen *ebiten.Image) {
 		y2 := float32(d.y + d.length)
 		vector.StrokeLine(screen, x1, y1, x2, y2, 1, rainColor, false)
 	}
+}
+
+func (b *Background) DrawForeground(screen *ebiten.Image) {
+	l := b.foreground
+	if l == nil {
+		return
+	}
+	w := float64(l.img.Bounds().Dx())
+	op := &ebiten.DrawImageOptions{}
+	op.GeoM.Translate(l.x, 0)
+	screen.DrawImage(l.img, op)
+	op2 := &ebiten.DrawImageOptions{}
+	op2.GeoM.Translate(l.x+w, 0)
+	screen.DrawImage(l.img, op2)
 }
 
 func (b *Background) Draw(screen *ebiten.Image, layerIndex int) {

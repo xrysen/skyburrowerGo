@@ -43,18 +43,23 @@ type SpawnConfig struct {
 }
 
 type LevelConfig struct {
-	WorldLevel      int // 1-based slot on the world map; used for unlock progression
-	Name            string
-	BackgroundPaths [4]string
-	SpawnConfigs    []SpawnConfig
-	EndCondition    LevelEndCondition
-	Duration        int
-	BossType        EnemyType
-	BossHealth      int
-	NextLevel       func() *LevelConfig
-	CoinSpawnConfig CoinSpawnConfig
-	BulletSpeed     float64 // base bullet speed for enemies in this level
-	Weather         WeatherType
+	WorldLevel           int // 1-based slot on the world map; used for unlock progression
+	Name                 string
+	BackgroundPaths      [4]string
+	SpawnConfigs         []SpawnConfig
+	EndCondition         LevelEndCondition
+	Duration             int
+	BossType             EnemyType
+	BossHealth           int
+	BossX                float64
+	BossY                float64
+	NextLevel            func() *LevelConfig
+	CoinSpawnConfig      CoinSpawnConfig
+	BulletSpeed          float64 // base bullet speed for enemies in this level
+	Weather              WeatherType
+	StaticBackgroundPath string
+	ForegroundPath       string
+	ExtraLayerPath       string
 }
 
 type CoinSpawnConfig struct {
@@ -119,8 +124,125 @@ func GetLevelForWorldSlot(slot int) *LevelConfig {
 		return GetLevel14()
 	case 15:
 		return GetLevel15()
+	case 16:
+		return GetLevel16()
+	case 17:
+		return GetLevel17()
+	case 18:
+		return GetLevel18()
+	case 19:
+		return GetLevel19()
+	case 20:
+		return GetLevel20()
 	default:
 		return nil
+	}
+}
+
+func GetLevel16() *LevelConfig {
+	return &LevelConfig{
+		WorldLevel: 16,
+		Name:       "Dead Forest",
+		BackgroundPaths: [4]string{
+			"Levels/Level4/lvl4-1.png",
+			"Levels/Level4/lvl4-2.png",
+			"Levels/Level4/lvl4-3.png",
+			"Levels/Level4/lvl4-4.png",
+		},
+		StaticBackgroundPath: "Levels/Level4/lvl4-moon.png",
+		ExtraLayerPath:       "Levels/Level4/lvl4-5.png",
+		SpawnConfigs: []SpawnConfig{
+			{EnemyType: BlightmothType, SpawnRate: 200, RandomY: true, MinSpawns: 1, MaxSpawns: 2, StartFrame: 60},
+			{EnemyType: WraithWhispType, SpawnRate: 300, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 300},
+			// W3 carry-overs — familiar but outclassed
+			{EnemyType: DarkWingType, SpawnRate: 360, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 300},
+			{EnemyType: DrillDroneType, SpawnRate: 420, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 600},
+		},
+		EndCondition:    EndOnTimer,
+		Duration:        Seconds45,
+		NextLevel:       GetLevel17,
+		CoinSpawnConfig: CoinSpawnConfig{SpawnRate: 160, RandomY: true},
+	}
+}
+
+func GetLevel17() *LevelConfig {
+	return &LevelConfig{
+		WorldLevel: 17,
+		Name:       "Dead Forest",
+		BackgroundPaths: [4]string{
+			"Levels/Level4/lvl4-1.png",
+			"Levels/Level4/lvl4-2.png",
+			"Levels/Level4/lvl4-3.png",
+			"Levels/Level4/lvl4-4.png",
+		},
+		StaticBackgroundPath: "Levels/Level4/lvl4-moon.png",
+		ExtraLayerPath:       "Levels/Level4/lvl4-5.png",
+		SpawnConfigs: []SpawnConfig{
+			{EnemyType: HollowStagType, SpawnRate: 220, RandomY: true, MinSpawns: 1, MaxSpawns: 2, StartFrame: 60},
+			{EnemyType: BlightmothType, SpawnRate: 260, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 120},
+			{EnemyType: WraithWhispType, SpawnRate: 280, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 300},
+			// W3 carry-overs
+			{EnemyType: DarkWingType, SpawnRate: 380, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 300},
+			{EnemyType: DynamiteBeetleType, SpawnRate: 420, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 600},
+		},
+		EndCondition:    EndOnTimer,
+		Duration:        Seconds45,
+		NextLevel:       GetLevel18,
+		CoinSpawnConfig: CoinSpawnConfig{SpawnRate: 160, RandomY: true},
+	}
+}
+
+func GetLevel18() *LevelConfig {
+	return &LevelConfig{
+		WorldLevel: 18,
+		Name:       "Dead Forest",
+		BackgroundPaths: [4]string{
+			"Levels/Level4/lvl4-1.png",
+			"Levels/Level4/lvl4-2.png",
+			"Levels/Level4/lvl4-3.png",
+			"Levels/Level4/lvl4-4.png",
+		},
+		StaticBackgroundPath: "Levels/Level4/lvl4-moon.png",
+		ExtraLayerPath:       "Levels/Level4/lvl4-5.png",
+		SpawnConfigs: []SpawnConfig{
+			{EnemyType: BlightmothType, SpawnRate: 180, RandomY: true, MinSpawns: 1, MaxSpawns: 2, StartFrame: 60},
+			{EnemyType: HollowStagType, SpawnRate: 200, RandomY: true, MinSpawns: 1, MaxSpawns: 2, StartFrame: 120},
+			{EnemyType: WraithWhispType, SpawnRate: 240, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 120},
+			// W3 carry-overs — background menace
+			{EnemyType: DynamiteBeetleType, SpawnRate: 340, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 300},
+			{EnemyType: DrillDroneType, SpawnRate: 380, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 300},
+		},
+		EndCondition:    EndOnTimer,
+		Duration:        Seconds45,
+		NextLevel:       GetLevel19,
+		CoinSpawnConfig: CoinSpawnConfig{SpawnRate: 140, RandomY: true},
+	}
+}
+
+func GetLevel19() *LevelConfig {
+	return &LevelConfig{
+		WorldLevel: 19,
+		Name:       "Dead Forest",
+		BackgroundPaths: [4]string{
+			"Levels/Level4/lvl4-1.png",
+			"Levels/Level4/lvl4-2.png",
+			"Levels/Level4/lvl4-3.png",
+			"Levels/Level4/lvl4-4.png",
+		},
+		StaticBackgroundPath: "Levels/Level4/lvl4-moon.png",
+		ExtraLayerPath:       "Levels/Level4/lvl4-5.png",
+		SpawnConfigs: []SpawnConfig{
+			{EnemyType: BlightmothType, SpawnRate: 150, RandomY: true, MinSpawns: 1, MaxSpawns: 3, StartFrame: 60},
+			{EnemyType: HollowStagType, SpawnRate: 170, RandomY: true, MinSpawns: 1, MaxSpawns: 2, StartFrame: 60},
+			{EnemyType: WraithWhispType, SpawnRate: 190, RandomY: true, MinSpawns: 1, MaxSpawns: 2, StartFrame: 120},
+			// W3 stragglers keeping the pressure up
+			{EnemyType: DarkWingType, SpawnRate: 360, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 300},
+			{EnemyType: DynamiteBeetleType, SpawnRate: 400, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 300},
+		},
+		EndCondition:    EndOnTimer,
+		Duration:        Seconds60,
+		NextLevel:       GetLevel20,
+		CoinSpawnConfig: CoinSpawnConfig{SpawnRate: 120, RandomY: true},
 	}
 }
 
@@ -200,6 +322,8 @@ func GetLevel8() *LevelConfig {
 			// W1 enemies return in small swarms before retiring for good
 			{EnemyType: FlutternatType, SpawnRate: 280, RandomY: true, MinSpawns: 2, MaxSpawns: 4, StartFrame: 120, EndFrame: 2400},
 			{EnemyType: SporespinnerType, SpawnRate: 300, RandomY: true, MinSpawns: 1, MaxSpawns: 3, StartFrame: 300, EndFrame: 2400},
+			// DarkWing brief cameo in the final stretch — first glimpse of the next world
+			{EnemyType: DarkWingType, SpawnRate: 400, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 2700},
 		},
 		EndCondition:    EndOnTimer,
 		Duration:        Seconds60,
@@ -225,6 +349,10 @@ func GetLevel9() *LevelConfig {
 			{EnemyType: CloudDrifterType, SpawnRate: 220, RandomY: true, MinSpawns: 1, MaxSpawns: 2, StartFrame: 60},
 			{EnemyType: LightningBugType, SpawnRate: 200, RandomY: true, MinSpawns: 1, MaxSpawns: 2, StartFrame: 60},
 			{EnemyType: StormSpriteType, SpawnRate: 250, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 60},
+			// DarkWing joins as a proper intro — W3 is close
+			{EnemyType: DarkWingType, SpawnRate: 340, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 1800},
+			// Blightmoth glimpse in the very last moments
+			{EnemyType: BlightmothType, SpawnRate: 450, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 3000},
 		},
 		EndCondition:    EndOnTimer,
 		Duration:        Seconds60,
@@ -249,6 +377,8 @@ func GetLevel10() *LevelConfig {
 			// Light W2 pressure during the boss fight — W1 fully retired
 			{EnemyType: CloudDrifterType, SpawnRate: 380, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 120},
 			{EnemyType: LightningBugType, SpawnRate: 340, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 120},
+			// Blightmoth sparse — unsettling hint at what's ahead
+			{EnemyType: BlightmothType, SpawnRate: 400, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 300},
 		},
 		EndCondition:    EndOnBossDeath,
 		BossType:        ThunderCrabType,
@@ -316,15 +446,19 @@ func GetLevel4() *LevelConfig {
 		WorldLevel: 4,
 		Name:       "Forest Chaos",
 		BackgroundPaths: [4]string{
-			"Levels/Level1/lvl1-1.png",
-			"Levels/Level1/lvl1-2.png",
-			"Levels/Level1/lvl1-3.png",
-			"Levels/Level1/lvl1-4.png",
+			"Levels/Level4/lvl4-1.png",
+			"Levels/Level4/lvl4-2.png",
+			"Levels/Level4/lvl4-3.png",
+			"Levels/Level4/lvl4-4.png",
 		},
+		StaticBackgroundPath: "Levels/Level4/lvl4-moon.png",
+		ExtraLayerPath:       "Levels/Level4/lvl4-5.png",
 		SpawnConfigs: []SpawnConfig{
 			{EnemyType: FlutternatType, SpawnRate: 100, RandomY: true, MinSpawns: 2, MaxSpawns: 4, StartFrame: 60},
 			{EnemyType: SporespinnerType, SpawnRate: 120, RandomY: true, MinSpawns: 2, MaxSpawns: 3, StartFrame: 40},
 			{EnemyType: ThistleTurretType, SpawnRate: 180, RandomY: false, MinSpawns: 1, MaxSpawns: 2, StartFrame: 100},
+			// CloudDrifter tease in the final stretch — something new is coming
+			{EnemyType: CloudDrifterType, SpawnRate: 380, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 2800},
 		},
 
 		EndCondition: EndOnTimer,
@@ -354,6 +488,9 @@ func GetLevel11() *LevelConfig {
 		},
 		SpawnConfigs: []SpawnConfig{
 			{EnemyType: DarkWingType, SpawnRate: 220, RandomY: true, MinSpawns: 1, MaxSpawns: 2, StartFrame: 60},
+			// Blightmoth joins mid-level as an equal threat
+			{EnemyType: BlightmothType, SpawnRate: 300, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 600},
+			// W2 carry-overs fade out in the first half
 			{EnemyType: CloudDrifterType, SpawnRate: 300, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 60, EndFrame: 1350},
 			{EnemyType: LightningBugType, SpawnRate: 320, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 120, EndFrame: 1350},
 		},
@@ -378,6 +515,9 @@ func GetLevel12() *LevelConfig {
 		SpawnConfigs: []SpawnConfig{
 			{EnemyType: DarkWingType, SpawnRate: 200, RandomY: true, MinSpawns: 1, MaxSpawns: 2, StartFrame: 60},
 			{EnemyType: DynamiteBeetleType, SpawnRate: 280, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 300},
+			{EnemyType: BlightmothType, SpawnRate: 260, RandomY: true, MinSpawns: 1, MaxSpawns: 2, StartFrame: 300},
+			// WraithWhisp first glimpse — final stretch only
+			{EnemyType: WraithWhispType, SpawnRate: 450, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 2400},
 		},
 		EndCondition:    EndOnTimer,
 		Duration:        Seconds50,
@@ -401,6 +541,9 @@ func GetLevel13() *LevelConfig {
 			{EnemyType: DarkWingType, SpawnRate: 180, RandomY: true, MinSpawns: 1, MaxSpawns: 2, StartFrame: 60},
 			{EnemyType: DynamiteBeetleType, SpawnRate: 260, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 120},
 			{EnemyType: DrillDroneType, SpawnRate: 300, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 300},
+			{EnemyType: BlightmothType, SpawnRate: 240, RandomY: true, MinSpawns: 1, MaxSpawns: 2, StartFrame: 120},
+			// WraithWhisp as a proper mid-level threat now
+			{EnemyType: WraithWhispType, SpawnRate: 360, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 900},
 		},
 		EndCondition:    EndOnTimer,
 		Duration:        Seconds55,
@@ -424,6 +567,9 @@ func GetLevel14() *LevelConfig {
 			{EnemyType: DarkWingType, SpawnRate: 160, RandomY: true, MinSpawns: 1, MaxSpawns: 2, StartFrame: 60},
 			{EnemyType: DynamiteBeetleType, SpawnRate: 220, RandomY: true, MinSpawns: 1, MaxSpawns: 2, StartFrame: 60},
 			{EnemyType: DrillDroneType, SpawnRate: 240, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 60},
+			// HollowStag first proper intro
+			{EnemyType: HollowStagType, SpawnRate: 320, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 600},
+			{EnemyType: WraithWhispType, SpawnRate: 300, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 300},
 		},
 		EndCondition:    EndOnTimer,
 		Duration:        Seconds60,
@@ -446,13 +592,43 @@ func GetLevel15() *LevelConfig {
 		SpawnConfigs: []SpawnConfig{
 			{EnemyType: DarkWingType, SpawnRate: 300, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 120},
 			{EnemyType: DynamiteBeetleType, SpawnRate: 400, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 300},
+			// HollowStag and WraithWhisp add chaos to the boss fight
+			{EnemyType: HollowStagType, SpawnRate: 380, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 300},
+			{EnemyType: WraithWhispType, SpawnRate: 360, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 300},
 		},
 		EndCondition:    EndOnBossDeath,
 		BossType:        ForemanType,
 		BossHealth:      200,
 		BulletSpeed:     11.0,
-		NextLevel:       nil,
+		NextLevel:       GetLevel16,
 		CoinSpawnConfig: CoinSpawnConfig{SpawnRate: 150, RandomY: true},
+	}
+}
+
+func GetLevel20() *LevelConfig {
+	return &LevelConfig{
+		WorldLevel: 20,
+		Name:       "Heartwood's Lair",
+		BackgroundPaths: [4]string{
+			"Levels/Level4/lvl4-1.png",
+			"Levels/Level4/lvl4-2.png",
+			"Levels/Level4/lvl4-3.png",
+			"Levels/Level4/lvl4-4.png",
+		},
+		StaticBackgroundPath: "Levels/Level4/lvl4-moon.png",
+		ExtraLayerPath:       "Levels/Level4/lvl4-5.png",
+		SpawnConfigs: []SpawnConfig{
+			{EnemyType: WraithWhispType, SpawnRate: 280, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 120},
+			{EnemyType: BlightmothType, SpawnRate: 320, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 300},
+			{EnemyType: HollowStagType, SpawnRate: 400, RandomY: true, MinSpawns: 1, MaxSpawns: 1, StartFrame: 600},
+		},
+		EndCondition: EndOnBossDeath,
+		BossType:     HeartwoodType,
+		BossHealth:           300,
+		BossX:                350,
+		BossY:                50,
+		NextLevel:            nil,
+		CoinSpawnConfig:      CoinSpawnConfig{SpawnRate: 150, RandomY: true},
 	}
 }
 

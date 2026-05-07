@@ -4,6 +4,7 @@ import (
 	"image"
 	"image/color"
 	"math"
+	"math/rand/v2"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
@@ -124,10 +125,13 @@ func (lb *LightningBug) TakeDamage(amount int) {
 }
 func (lb *LightningBug) IsDead() bool { return lb.health <= 0 }
 func (lb *LightningBug) OnDeath(game *Game) {
-	size := SmallCoin
-	if ShouldSpawnBigCoin(game.player.luck, 1) {
-		size = BigCoin
+	numCoins := 2 + rand.IntN(2)
+	for i := 0; i < numCoins; i++ {
+		size := SmallCoin
+		if ShouldSpawnBigCoin(game.player.luck, 1) {
+			size = BigCoin
+		}
+		coin := NewCoin(lb.x+float64(i*8), lb.y, size, game.coinImg)
+		game.coins = append(game.coins, coin)
 	}
-	coin := NewCoin(lb.x, lb.y, size, game.coinImg)
-	game.coins = append(game.coins, coin)
 }

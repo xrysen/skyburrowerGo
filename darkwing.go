@@ -3,6 +3,7 @@ package main
 import (
 	"image"
 	"image/color"
+	"math/rand/v2"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
@@ -115,10 +116,13 @@ func (d *DarkWing) TakeDamage(amount int) {
 }
 func (d *DarkWing) IsDead() bool { return d.health <= 0 }
 func (d *DarkWing) OnDeath(game *Game) {
-	size := SmallCoin
-	if ShouldSpawnBigCoin(game.player.luck, 1) {
-		size = BigCoin
+	numCoins := 2 + rand.IntN(2)
+	for i := 0; i < numCoins; i++ {
+		size := SmallCoin
+		if ShouldSpawnBigCoin(game.player.luck, 1) {
+			size = BigCoin
+		}
+		coin := NewCoin(d.x+float64(i*8), d.y, size, game.coinImg)
+		game.coins = append(game.coins, coin)
 	}
-	coin := NewCoin(d.x, d.y, size, game.coinImg)
-	game.coins = append(game.coins, coin)
 }

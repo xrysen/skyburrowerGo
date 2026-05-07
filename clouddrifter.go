@@ -4,6 +4,7 @@ import (
 	"image"
 	"image/color"
 	"math"
+	"math/rand/v2"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
@@ -118,10 +119,13 @@ func (c *CloudDrifter) TakeDamage(amount int) {
 }
 func (c *CloudDrifter) IsDead() bool { return c.health <= 0 }
 func (c *CloudDrifter) OnDeath(game *Game) {
-	size := SmallCoin
-	if ShouldSpawnBigCoin(game.player.luck, 1) {
-		size = BigCoin
+	numCoins := 2 + rand.IntN(2)
+	for i := 0; i < numCoins; i++ {
+		size := SmallCoin
+		if ShouldSpawnBigCoin(game.player.luck, 1) {
+			size = BigCoin
+		}
+		coin := NewCoin(c.x+float64(i*8), c.y, size, game.coinImg)
+		game.coins = append(game.coins, coin)
 	}
-	coin := NewCoin(c.x, c.y, size, game.coinImg)
-	game.coins = append(game.coins, coin)
 }
