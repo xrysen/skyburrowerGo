@@ -43,7 +43,7 @@ func NewPlayer(img *ebiten.Image) *Player {
 		health:       3,
 		maxHealth:    3,
 		luck:         1,
-		coins:        9999,
+		coins:        0,
 
 		// Default upgrade stats
 		bulletDamage: 1,
@@ -91,9 +91,11 @@ func (p *Player) Update(g *Game) {
 		p.y = float64(ScreenHeight) - float64(p.frameHeight) + offscreenAllowance
 	}
 
-	p.fireCounter++
+	if g.state != StateLevelComplete {
+		p.fireCounter++
+	}
 
-	if p.fireCounter >= p.fireInterval {
+	if p.fireCounter >= p.fireInterval && g.state != StateLevelComplete {
 		p.fireCounter = 0
 
 		bx := p.x + float64(p.frameWidth)/2

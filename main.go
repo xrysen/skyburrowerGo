@@ -35,10 +35,12 @@ const (
 	StateLevel GameState = iota
 	StateLevelComplete
 	StateGameOver
+	StatePlayerDying
 )
 
 const (
-	FadeSpeed = 0.02
+	FadeSpeed          = 0.02
+	PlayerDyingDuration = 90
 )
 
 type Game struct {
@@ -80,6 +82,23 @@ type Game struct {
 	isFading  bool
 	fadeIn    bool
 
+	spritesFadeAlpha float64
+	spritesFading    bool
+	spritesLayer     *ebiten.Image
+
+	victoryFrame        int
+	victoryClickReady   bool
+	victoryCarrotMask   uint8
+	victoryCarrotEmpty  *ebiten.Image
+	victoryCarrotFull   *ebiten.Image
+	font                *BitmapFont
+
+	playerDyingTimer  int
+	playerCrashAngle  float64
+	playerCrashVY     float64
+	smokeParticles    []smokeParticle
+	playerDied        bool
+
 	// Levels 1..highestUnlockedLevel are playable on the world map (start: only 1).
 	highestUnlockedLevel int
 
@@ -107,11 +126,27 @@ func (g *Game) Update() error {
 		g.updatePlaying()
 	case ScreenGameOver:
 		g.updateGameOver()
+	case ScreenVictory:
+		g.updateVictory()
 	}
 	return nil
 }
 
+const SpritesFadeSpeed = 0.033 // ~30 frames
+
 func (g *Game) updatePlaying() {
+	if g.spritesFading {
+		g.spritesFadeAlpha -= SpritesFadeSpeed
+		if g.spritesFadeAlpha <= 0 {
+			g.spritesFadeAlpha = 0
+			g.spritesFading = false
+			g.fadeAlpha = 0.0
+			g.fadeSpeed = FadeSpeed
+			g.isFading = true
+			g.fadeIn = false
+		}
+	}
+
 	if g.isFading {
 		if g.fadeIn {
 			// Fade in
@@ -127,7 +162,7 @@ func (g *Game) updatePlaying() {
 				g.fadeAlpha = 1.0
 				g.isFading = false
 				if g.state == StateLevelComplete {
-					g.transitionToNextLevel()
+					g.enterVictoryScreen()
 				} else if g.state == StateGameOver {
 					g.transitionToWorldMapFromGameOver()
 				}
@@ -137,7 +172,13 @@ func (g *Game) updatePlaying() {
 
 	// Always update visuals (even during fade-out)
 	g.background.Update()
-	g.player.Update(g)
+	if g.state == StatePlayerDying {
+		g.updatePlayerDying()
+	}
+
+	if !g.playerDied {
+		g.player.Update(g)
+	}
 
 	var activeBullets []Bullet
 	for _, b := range g.bullets {
@@ -194,8 +235,17 @@ func (g *Game) updatePlaying() {
 	}
 	g.enemies = activeEnemies
 
+	var activeCoins []*Coin
+	for _, c := range g.coins {
+		c.Update(g)
+		if !c.collected && c.x > -50 {
+			activeCoins = append(activeCoins, c)
+		}
+	}
+	g.coins = activeCoins
+
 	// Only update gameplay logic if level is active
-	if g.state != StateLevelComplete && g.state != StateGameOver {
+	if !g.playerDied && g.state != StateLevelComplete && g.state != StateGameOver {
 
 		g.levelTimer++
 
@@ -277,15 +327,6 @@ func (g *Game) updatePlaying() {
 				g.coins = append(g.coins, coin)
 			}
 		}
-
-		var activeCoins []*Coin
-		for _, c := range g.coins {
-			c.Update(g)
-			if !c.collected && c.x > -50 {
-				activeCoins = append(activeCoins, c)
-			}
-		}
-		g.coins = activeCoins
 
 		// Check if this is a boss level and spawn carrots based on health
 		if g.currentLevel.BossType != "" {
@@ -385,7 +426,7 @@ func (g *Game) updatePlaying() {
 					g.player.TakeDamage(1)
 
 					if g.player.IsDead() {
-						g.gameOver()
+						g.startPlayerDeathSequence()
 					}
 				}
 			}
@@ -440,7 +481,7 @@ func (g *Game) updatePlaying() {
 				}
 
 				if g.player.IsDead() {
-					g.gameOver()
+					g.startPlayerDeathSequence()
 				}
 			}
 		}
@@ -461,7 +502,7 @@ func (g *Game) updatePlaying() {
 				g.player.TakeDamage(1)
 
 				if g.player.IsDead() {
-					g.gameOver()
+					g.startPlayerDeathSequence()
 				}
 			}
 		}
@@ -550,11 +591,8 @@ func (g *Game) spawnEnemy(cfg SpawnConfig, spawnIndex int) {
 
 func (g *Game) completeLevel() {
 	g.state = StateLevelComplete
-
-	g.fadeAlpha = 0.0
-	g.fadeSpeed = FadeSpeed
-	g.isFading = true
-	g.fadeIn = false
+	g.spritesFadeAlpha = 1.0
+	g.spritesFading = true
 }
 
 func (g *Game) transitionToNextLevel() {
@@ -601,6 +639,8 @@ func (g *Game) transitionToWorldMapFromGameOver() {
 	// Return to worldmap
 	g.currentScreen = ScreenWorldMap
 	g.state = StateLevel // Reset state for next level attempt
+	g.playerDied = false
+	g.smokeParticles = nil
 }
 
 func (g *Game) spawnBossCarrots() {
@@ -661,6 +701,9 @@ func (g *Game) loadLevel(level *LevelConfig) {
 		g.enemies = append(g.enemies, boss)
 	}
 
+	g.spritesFadeAlpha = 1.0
+	g.spritesFading = false
+
 	// Start fade in
 	g.fadeAlpha = 1.0
 	g.fadeSpeed = FadeSpeed
@@ -719,6 +762,35 @@ func (g *Game) CollectLevelCarrot(index int) {
 	g.runLevelCarrotMask |= uint8(1) << index
 }
 
+func (g *Game) drawSpritesLayer(screen *ebiten.Image) {
+	if g.spritesFadeAlpha <= 0 {
+		return
+	}
+	if g.spritesFadeAlpha >= 1.0 {
+		for _, e := range g.enemies {
+			e.Draw(screen)
+		}
+		if g.playerDied {
+			g.drawPlayerDying(screen)
+		} else {
+			g.player.Draw(screen)
+		}
+		return
+	}
+	g.spritesLayer.Clear()
+	for _, e := range g.enemies {
+		e.Draw(g.spritesLayer)
+	}
+	if g.playerDied {
+		g.drawPlayerDying(g.spritesLayer)
+	} else {
+		g.player.Draw(g.spritesLayer)
+	}
+	op := &ebiten.DrawImageOptions{}
+	op.ColorScale.ScaleAlpha(float32(g.spritesFadeAlpha))
+	screen.DrawImage(g.spritesLayer, op)
+}
+
 func (g *Game) Draw(screen *ebiten.Image) {
 
 	switch g.currentScreen {
@@ -728,6 +800,8 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		g.drawPlaying(screen)
 	case ScreenGameOver:
 		g.drawGameOver(screen)
+	case ScreenVictory:
+		g.drawVictory(screen)
 	}
 }
 
@@ -758,11 +832,7 @@ func (g *Game) drawPlaying(screen *ebiten.Image) {
 		b.Draw(screen)
 	}
 
-	for _, e := range g.enemies {
-		e.Draw(screen)
-	}
-
-	g.player.Draw(screen)
+	g.drawSpritesLayer(screen)
 	g.background.DrawForeground(screen)
 	g.background.DrawRain(screen)
 
@@ -809,6 +879,11 @@ func main() {
 		spawnCounts:          make(map[EnemyType]int),
 		coinImg:              assets.CoinImg,
 		carrotImg:            assets.CarrotImg,
+		victoryCarrotEmpty:   assets.LsCarrotEmpty,
+		victoryCarrotFull:    assets.LsCarrotFull,
+		font:                 font,
+		spritesFadeAlpha:     1.0,
+		spritesLayer:         ebiten.NewImage(ScreenWidth, ScreenHeight),
 	}
 
 	// Initialize all upgrades to level 0
@@ -835,4 +910,12 @@ func (g *Game) gameOver() {
 	g.fadeSpeed = FadeSpeed
 	g.isFading = true
 	g.fadeIn = false
+}
+
+func (g *Game) startPlayerDeathSequence() {
+	g.state = StatePlayerDying
+	g.playerDyingTimer = 0
+	g.playerCrashAngle = 0
+	g.playerCrashVY = 0
+	g.playerDied = true
 }

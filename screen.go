@@ -11,4 +11,5 @@ const (
 	ScreenWorldMap Screen = iota
 	ScreenPlaying
 	ScreenGameOver
+	ScreenVictory
 )

@@ -44,7 +44,7 @@ func (c *LevelCarrot) Draw(screen *ebiten.Image) {
 func planCarrotSpawnFrames(level *LevelConfig) [CarrotsPerLevel]int {
 	var times [CarrotsPerLevel]int
 
-	playEnd := level.Duration - FadeOutDuration - 3*FPS
+	playEnd := level.Duration - FadeOutDuration - 8*FPS
 	if playEnd <= 0 {
 		playEnd = Minutes2 - FadeOutDuration
 	}
